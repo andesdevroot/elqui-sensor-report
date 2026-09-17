@@ -2,18 +2,21 @@
 
 > Ver [doc/06-ROADMAP.md](doc/06-ROADMAP.md) para el detalle de fases y criterios de aceptación.
 
-**Estado actual**: Fase 0 — Setup (en progreso).
+## Estado actual
+
+- Fase 1 — Ingesta, en curso. **T1.1 completada**; siguiente: **T1.2 (cliente DGA)**.
+- Retoma detallada (blockers y decisiones) en [doc/07-HANDOFF.md](doc/07-HANDOFF.md).
 
 ## Fase 0 — Setup
 
 - [x] Toolchain de Go instalada (`go 1.23.0`)
-- [x] Repositorio git inicializado
-- [ ] `doc/` creada como fuente de verdad — en progreso (este commit)
+- [x] Repositorio git inicializado (rama `main`)
+- [x] `doc/` creada como fuente de verdad
 
 ## Fase 1 — Ingesta
 
-- [ ] T1.1: parser CSV de sensores (test RED ya escrito en `internal/ingest/csv_test.go`) — criterio: `go test ./internal/ingest/...` en verde contra `testdata/`
-- [ ] T1.2: cliente DGA — criterio: TODO (se define al documentar la fuente)
+- [x] T1.1: parser CSV de sensores — criterio cumplido: `go test ./internal/ingest/...` en verde (`internal/models/sensor.go`, `internal/ingest/csv.go`)
+- [ ] T1.2: cliente DGA — criterio: TODO (se define al documentar la fuente) ← siguiente
 - [ ] T1.3: tests de integración CSV → models — criterio: pipeline de punta a punta sin mocks
 
 ## Fase 2 — Análisis

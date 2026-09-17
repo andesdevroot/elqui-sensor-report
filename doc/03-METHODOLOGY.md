@@ -26,3 +26,9 @@ leer doc/ → escribir test → go test (RED) → implementar → go test (GREEN
 ## Regla de oro
 
 Nunca hacer commit con tests rojos: `go test -v ./...` en verde es requisito previo de cada commit.
+
+## Handoff entre sesiones
+
+- **Al iniciar una sesión**: leer `Task.md` (cola de trabajo) y `doc/07-HANDOFF.md` (estado, blockers y decisiones recientes) antes de escribir código.
+- **Al cerrar una sesión**: actualizar `Task.md` (marcar lo completado y señalar la siguiente tarea) y `doc/07-HANDOFF.md` (Estado actual, Último commit, Siguiente tarea, Blockers, Decisiones recientes).
+- El handoff viaja en el commit que cierra la tarea; no se deja para un commit aparte.
