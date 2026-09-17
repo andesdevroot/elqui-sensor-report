@@ -4,7 +4,7 @@
 
 ## Estado actual
 
-- Fase 1 — Ingesta, en curso. **T1.1 completada**; siguiente: **T1.2 (cliente DGA)**.
+- Fase 1 — Ingesta, en curso. **T1.1 cerrada** (parser + tests de caminos de error); siguiente: **T1.3** — T1.2 queda bloqueada por falta de documentación de la fuente DGA.
 - Retoma detallada (blockers y decisiones) en [doc/07-HANDOFF.md](doc/07-HANDOFF.md).
 
 ## Fase 0 — Setup
@@ -15,9 +15,9 @@
 
 ## Fase 1 — Ingesta
 
-- [x] T1.1: parser CSV de sensores — criterio cumplido: `go test ./internal/ingest/...` en verde (`internal/models/sensor.go`, `internal/ingest/csv.go`)
-- [ ] T1.2: cliente DGA — criterio: TODO (se define al documentar la fuente) ← siguiente
-- [ ] T1.3: tests de integración CSV → models — criterio: pipeline de punta a punta sin mocks
+- [x] T1.1: parser CSV de sensores — criterio cumplido: `go test ./internal/ingest/...` en verde, caminos de error cubiertos (`internal/models/sensor.go`, `internal/ingest/csv.go`, `internal/ingest/csv_test.go`)
+- [ ] T1.2: cliente DGA — bloqueada: criterio TODO (se define al documentar la fuente en `doc/05-DATA-SOURCES.md`)
+- [ ] T1.3: tests de integración CSV → models — criterio: pipeline de punta a punta sin mocks ← siguiente
 
 ## Fase 2 — Análisis
 
