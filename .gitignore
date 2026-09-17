@@ -1,0 +1,17 @@
+# Binarios y build
+build/
+
+# Logs
+*.log
+audit.log
+
+# Métricas y cobertura
+metrics.json
+coverage.out
+
+# macOS
+.DS_Store
+
+# Toolchain y descargas grandes
+go1.23.0.linux-amd64.tar.gz
+*.tar.gz
