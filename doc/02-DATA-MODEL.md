@@ -53,9 +53,10 @@ type EfficiencyReport struct {
 - `TempC` ∈ [-10, 50]
 - `EficienciaPct` ∈ [0, ∞)
 
+Los invariantes se validan al ingerir: `ParseSensorCSV` (ver [`internal/ingest/csv.go`](../internal/ingest/csv.go)) devuelve error si una lectura los viola.
+
 ## TODOs
 
-- TODO: definir dónde se validan los invariantes (¿`ingest` o `models`?) y qué pasa con una lectura fuera de rango: ¿error o advertencia?
 - TODO: definir los valores y umbrales de `Semaforo` (p. ej. verde/amarillo/rojo).
 - TODO: definir la semántica de `Metodo` y el rango de `Confianza` (¿0.0–1.0?).
 - TODO: definir el formato de `Periodo` (p. ej. `2026-03` o `2026-03-01..2026-03-31`).

@@ -71,6 +71,7 @@ La documentación completa vive en `doc/` y es la fuente de verdad del proyecto:
 - [04 — Convenciones](doc/04-CONVENTIONS.md)
 - [05 — Fuentes de datos](doc/05-DATA-SOURCES.md)
 - [06 — Roadmap](doc/06-ROADMAP.md)
+- [07 — Handoff entre sesiones](doc/07-HANDOFF.md)
 
 ## Autor
 
