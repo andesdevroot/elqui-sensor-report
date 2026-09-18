@@ -24,8 +24,10 @@ const numColumns = 4
 var ErrInvalidHeader = errors.New("header del CSV inválido")
 
 // ParseSensorCSV convierte un CSV de sensor de humedad de suelo en una lista de
-// models.SensorReading. Valida el header exacto y los invariantes de cada lectura:
-// HumedadPct en [0,100], TempC en [-10,50], timestamp en RFC3339 y parcela_id no vacío.
+// models.SensorReading. Tolera CSV exportados desde Excel (BOM UTF-8 y espacios
+// alrededor del header), valida el header exacto y los invariantes de cada
+// lectura: HumedadPct en [0,100], TempC en [-10,50], timestamp en RFC3339 y
+// parcela_id no vacío.
 func ParseSensorCSV(r io.Reader) ([]models.SensorReading, error) {
 	reader := csv.NewReader(r)
 
@@ -36,6 +38,7 @@ func ParseSensorCSV(r io.Reader) ([]models.SensorReading, error) {
 		}
 		return nil, fmt.Errorf("parsear header: %w", err)
 	}
+	header = normalizeHeader(header)
 	if got := strings.Join(header, ","); got != csvHeader {
 		return nil, fmt.Errorf("%w: se esperaba %q, se obtuvo %q", ErrInvalidHeader, csvHeader, got)
 	}
@@ -58,6 +61,20 @@ func ParseSensorCSV(r io.Reader) ([]models.SensorReading, error) {
 	}
 
 	return readings, nil
+}
+
+// normalizeHeader limpia el header de los artefactos típicos de los exportadores
+// tipo Excel: BOM UTF-8 al inicio del archivo y espacios alrededor de cada columna.
+// El CRLF ya lo normaliza encoding/csv. Devuelve el mismo slice modificado in-place.
+func normalizeHeader(header []string) []string {
+	if len(header) == 0 {
+		return header
+	}
+	header[0] = strings.TrimPrefix(header[0], "\ufeff")
+	for i, col := range header {
+		header[i] = strings.TrimSpace(col)
+	}
+	return header
 }
 
 // parseRecord convierte una fila del CSV (sin el header) en un models.SensorReading validado.

@@ -4,13 +4,13 @@ Documento de retoma: qué se hizo, qué sigue y qué está bloqueado. Se actuali
 
 ## Estado actual
 
-- Fase 2 — Análisis, en curso. **T2.1 cerrada**: `ET0Hargreaves` implementada y validada contra FAO-56 (Ej. 20 y Ej. 8).
-- Fase 1 — Ingesta: T1.1 y T1.3 cerradas; T1.2 bloqueada por falta de documentación de la fuente DGA.
+- Fase 1 — Ingesta: T1.1, T1.3 y T1.4 cerradas; T1.2 bloqueada por falta de documentación de la fuente DGA.
+- Fase 2 — Análisis: T2.1 cerrada (ET0 Hargreaves-Samani validada contra FAO-56); siguiente T2.2.
 - Suite en verde (`go test ./...`). Repositorio publicado en https://github.com/andesdevroot/elqui-sensor-report (rama `main`).
 
 ## Último commit
 
-- `a13442f` — `test(analysis): agrega test RED de ET0 Hargreaves-Samani`
+- `bb32ecd` — `docs(conventions): marca fixtures de testdata como inmutables`
 
 ## Siguiente tarea
 
@@ -24,8 +24,6 @@ Documento de retoma: qué se hizo, qué sigue y qué está bloqueado. Se actuali
 
 ## Decisiones recientes
 
-- **Fuente de validación ET0 = FAO-56** (Allen et al. 1998): ec. 52 (Hargreaves-Samani) + ec. 21–25 para Ra. Documentada en `doc/05-DATA-SOURCES.md`.
-- **Ancla externa**: FAO-56 Ej. 20 (Lyon, 45.7167°N, 15-jul, 26.6/14.8 °C) → Hargreaves = 5.0 mm/día; la implementación reproduce 5.035 (tol. 0.1). Ra validada con FAO-56 Ej. 8 (3-sep, 20°S → 13.1 mm/día).
-- **API**: `analysis.ET0Hargreaves(date time.Time, latDeg, tMaxC, tMinC float64) (models.ET0Result, error)`, con `ErrInvalidInput` si la latitud sale de [-90, 90] o si Tmax < Tmin. Tmedia se deriva como (Tmax + Tmin) / 2.
-- **`Confianza` fijada en 1.0 provisional**: la semántica del campo sigue como TODO en `doc/02-DATA-MODEL.md`.
-- **Casos 2 y 3 (Elqui) son valores calculados** con la ec. 52, no mediciones publicadas; queda TODO validación cruzada con INIA para v2.
+- **Fixtures de `testdata/` inmutables** (`doc/04-CONVENTIONS.md`): si se necesita otro caso se crea un archivo nuevo. Regla añadida tras detectar un drift local en `sensor_sample.csv` (un espacio antes del header) que git no puede atribuir porque nunca se commiteó.
+- **T1.4 — tolerancia a CSV de Excel**: `ParseSensorCSV` ahora limpia BOM UTF-8 y espacios alrededor del header (`normalizeHeader`). El CRLF ya lo resolvía `encoding/csv`, así que no requirió código.
+- **Fixture nuevo**: `testdata/sensor_sample_excel.csv` (BOM + espacios en header + CRLF) con su test de integración.

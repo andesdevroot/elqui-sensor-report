@@ -4,8 +4,8 @@
 
 ## Estado actual
 
-- Fase 2 — Análisis, en curso. **T2.1 cerrada** (ET0 Hargreaves-Samani validada contra FAO-56); siguiente: **T2.2 (balance hídrico)**.
-- Fase 1 — Ingesta: T1.1 y T1.3 cerradas; T1.2 sigue bloqueada por falta de documentación de la fuente DGA.
+- Fase 1 — Ingesta: T1.1, T1.3 y **T1.4** cerradas; T1.2 sigue bloqueada por falta de documentación de la fuente DGA.
+- Fase 2 — Análisis: **T2.1 cerrada** (ET0 Hargreaves-Samani validada contra FAO-56); siguiente: **T2.2 (balance hídrico)**.
 - Retoma detallada (blockers y decisiones) en [doc/07-HANDOFF.md](doc/07-HANDOFF.md).
 
 ## Fase 0 — Setup
@@ -19,6 +19,7 @@
 - [x] T1.1: parser CSV de sensores — criterio cumplido: `go test ./internal/ingest/...` en verde, caminos de error cubiertos (`internal/models/sensor.go`, `internal/ingest/csv.go`, `internal/ingest/csv_test.go`)
 - [ ] T1.2: cliente DGA — bloqueada: criterio TODO (se define al documentar la fuente en `doc/05-DATA-SOURCES.md`)
 - [x] T1.3: tests de integración CSV → models — criterio cumplido: pipeline archivo → models sobre `testdata/sensor_sample.csv`, sin mocks (`internal/ingest/integration_test.go`)
+- [x] T1.4: tolerancia a CSV exportados desde Excel (BOM UTF-8, espacios en header, CRLF) — criterio cumplido: tests unitarios + fixture `testdata/sensor_sample_excel.csv` en verde (`internal/ingest/csv.go`)
 
 ## Fase 2 — Análisis
 

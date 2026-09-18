@@ -9,6 +9,9 @@ import (
 // fixturePath apunta al CSV de ejemplo en testdata/ de la raíz del repositorio.
 var fixturePath = filepath.Join("..", "..", "testdata", "sensor_sample.csv")
 
+// excelFixturePath apunta al CSV con BOM, espacios en header y CRLF (export tipo Excel).
+var excelFixturePath = filepath.Join("..", "..", "testdata", "sensor_sample_excel.csv")
+
 // TestParseSensorCSV_IntegracionFixture ejercita el pipeline real archivo → models,
 // sin mocks: abre el CSV de testdata/, lo parsea y valida las lecturas resultantes.
 func TestParseSensorCSV_IntegracionFixture(t *testing.T) {
@@ -49,5 +52,30 @@ func TestParseSensorCSV_IntegracionFixture(t *testing.T) {
 	}
 	if parcela02 != 3 {
 		t.Errorf("Se esperaban 3 lecturas de PARCELA_02, se obtuvieron %d", parcela02)
+	}
+}
+
+// TestParseSensorCSV_IntegracionFixtureExcel valida el fixture exportado como Excel
+// (BOM UTF-8 + espacios en header + CRLF) desde archivo, sin mocks.
+func TestParseSensorCSV_IntegracionFixtureExcel(t *testing.T) {
+	f, err := os.Open(excelFixturePath)
+	if err != nil {
+		t.Fatalf("no se pudo abrir el fixture %q: %v", excelFixturePath, err)
+	}
+	defer f.Close()
+
+	readings, err := ParseSensorCSV(f)
+	if err != nil {
+		t.Fatalf("ParseSensorCSV devolvió error: %v", err)
+	}
+
+	if len(readings) != 2 {
+		t.Fatalf("Se esperaban 2 lecturas, se obtuvieron %d", len(readings))
+	}
+	if readings[0].ParcelaID != "PARCELA_01" {
+		t.Errorf("Se esperaba parcela PARCELA_01, se obtuvo %q", readings[0].ParcelaID)
+	}
+	if readings[1].TempC != 26.1 {
+		t.Errorf("Se esperaba temperatura 26.1, se obtuvo %f", readings[1].TempC)
 	}
 }
