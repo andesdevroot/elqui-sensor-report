@@ -4,8 +4,8 @@
 
 ## Estado actual
 
-- Fase 1 — Ingesta: **T1.1 y T1.3 cerradas**; T1.2 sigue bloqueada por falta de documentación de la fuente DGA.
-- Siguiente: **T2.1 — ET0 Hargreaves-Samani**.
+- Fase 2 — Análisis, en curso. **T2.1 cerrada** (ET0 Hargreaves-Samani validada contra FAO-56); siguiente: **T2.2 (balance hídrico)**.
+- Fase 1 — Ingesta: T1.1 y T1.3 cerradas; T1.2 sigue bloqueada por falta de documentación de la fuente DGA.
 - Retoma detallada (blockers y decisiones) en [doc/07-HANDOFF.md](doc/07-HANDOFF.md).
 
 ## Fase 0 — Setup
@@ -22,8 +22,8 @@
 
 ## Fase 2 — Análisis
 
-- [ ] T2.1: ET0 Hargreaves-Samani — criterio: tests con casos conocidos (TODO: fuente de validación) ← siguiente
-- [ ] T2.2: balance hídrico — criterio: consumo real vs. óptimo por período con tests de tabla
+- [x] T2.1: ET0 Hargreaves-Samani — criterio cumplido: validada contra FAO-56 (`internal/analysis/et0.go`; casos en `doc/05-DATA-SOURCES.md`)
+- [ ] T2.2: balance hídrico — criterio: consumo real vs. óptimo por período con tests de tabla ← siguiente
 - [ ] T2.3: eficiencia y semáforo — criterio: `EficienciaPct` + `Semaforo` por umbrales documentados
 
 ## Fase 3 — Reporte
