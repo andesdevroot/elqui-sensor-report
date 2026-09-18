@@ -32,6 +32,13 @@ type ET0Result struct {
 }
 ```
 
+### Semántica de `Metodo` y `Confianza`
+
+- **`Metodo`**: identificador del método de cálculo que produjo `ET0mm`. Valor actual en v1: `"Hargreaves-Samani (FAO-56)"` (ver `doc/05-DATA-SOURCES.md`).
+- **`Confianza`**: certeza del resultado, en el rango **[0.0, 1.0]**.
+  - `1.0` = sin incertidumbre cuantificada para esa estimación (valor por defecto en v1).
+  - Futuro: se derivará de la calidad y disponibilidad de los datos de entrada (más estaciones meteorológicas y datos medidos en vez de estimados ⇒ valor más alto). Ninguna lógica lo ajusta todavía.
+
 ## EfficiencyReport
 
 Resumen de eficiencia hídrica de una parcela en un período.
@@ -58,5 +65,4 @@ Los invariantes se validan al ingerir: `ParseSensorCSV` (ver [`internal/ingest/c
 ## TODOs
 
 - TODO: definir los valores y umbrales de `Semaforo` (p. ej. verde/amarillo/rojo).
-- TODO: definir la semántica de `Metodo` y el rango de `Confianza` (¿0.0–1.0?).
 - TODO: definir el formato de `Periodo` (p. ej. `2026-03` o `2026-03-01..2026-03-31`).

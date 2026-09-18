@@ -39,7 +39,7 @@ func ET0Hargreaves(date time.Time, latDeg, tMaxC, tMinC float64) (models.ET0Resu
 		Fecha:  date,
 		ET0mm:  et0,
 		Metodo: et0Method,
-		// TODO: definir la semántica de Confianza (doc/02-DATA-MODEL.md); 1.0 es un valor neutro provisional.
+		// Confianza = 1.0: sin incertidumbre cuantificada (ver doc/02-DATA-MODEL.md).
 		Confianza: 1.0,
 	}, nil
 }
