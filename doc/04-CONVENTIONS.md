@@ -24,6 +24,13 @@
 - Nombres `TestXxx_Escenario` (p. ej. `TestParseSensorCSV_HumedadFueraDeRango`).
 - Los tests viven junto al código, en el mismo paquete.
 
+## Fixtures
+
+- Los archivos de `testdata/` son **inmutables**: no se editan ni se "arreglan"; representan un caso fijo y versionado.
+- Si necesitas otro caso, **crea un archivo nuevo** (p. ej. `sensor_sample_2.csv`), nunca modifiques uno existente.
+- Un test que falla por un fixture cambiado es drift del working tree, no una razón para editar el fixture.
+- Antes de correr la suite, `git status` debe estar limpio en `testdata/`.
+
 ## Commits
 
 - Formato: `tipo(scope): mensaje en español, imperativo`, con `tipo` ∈ `feat|fix|refactor|docs|test|chore`.
