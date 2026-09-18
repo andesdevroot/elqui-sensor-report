@@ -4,17 +4,18 @@ Documento de retoma: qué se hizo, qué sigue y qué está bloqueado. Se actuali
 
 ## Estado actual
 
-- Fase 1 — Ingesta, en curso. **T1.1 cerrada**: parser CSV con caminos de error cubiertos por tests (4 tests, 5 subtests de tabla).
-- `go test ./...` pasa. Repositorio publicado en https://github.com/andesdevroot/elqui-sensor-report (rama `main`).
+- Fase 1 — Ingesta: **T1.1 y T1.3 cerradas**; T1.2 bloqueada por falta de documentación de la fuente DGA.
+- Suite: 5 tests en verde (`go test ./...`), incluido el test de integración sobre `testdata/sensor_sample.csv`.
+- Repositorio publicado en https://github.com/andesdevroot/elqui-sensor-report (rama `main`).
 
 ## Último commit
 
-- `703573b` — `docs: indexa 07-HANDOFF y documenta validación en ingest`
+- `f87995c` — `test(ingest): agrega test de integración con fixture CSV de sensores`
 
 ## Siguiente tarea
 
-- **T1.3 — Tests de integración CSV → models**: pipeline de punta a punta sobre un archivo de `testdata/`, sin mocks.
-- T1.2 (cliente DGA) queda bloqueada por falta de documentación de la fuente.
+- **T2.1 — ET0 Hargreaves-Samani**: definir `ET0Result` en `internal/models` (contrato en `doc/02`) e implementar el cálculo con TDD. Falta fijar la fuente de validación de los casos conocidos (TODO). El sensor entrega `TempC`, insumo principal de Hargreaves-Samani.
+- T1.2 (cliente DGA) sigue bloqueada.
 
 ## Blockers
 
@@ -23,7 +24,6 @@ Documento de retoma: qué se hizo, qué sigue y qué está bloqueado. Se actuali
 
 ## Decisiones recientes
 
-- **Tests de caminos de error**: `internal/ingest/csv_test.go` cubre header inválido (`errors.Is` sobre `ErrInvalidHeader`), CSV vacío, humedad fuera de [0,100] (150 y -5), temperatura fuera de [-10,50] (60 y -15) y timestamp no RFC3339. No fue necesario tocar `csv.go`.
-- **`doc/02` actualizado**: el TODO sobre *dónde* se validan los invariantes quedó resuelto con una referencia a `internal/ingest/csv.go`.
-- **README indexa `doc/07`**: la lista de documentación ahora cubre 00–07.
-- **gofmt**: `internal/ingest/csv_test.go` quedó formateado; `gofmt -l internal/` está limpio.
+- **Fixture en la raíz** (`testdata/sensor_sample.csv`, no por paquete): sirve como dataset de ejemplo además de insumo del test, y el README ya declara ese directorio.
+- **Test de integración sin mocks**: `internal/ingest/integration_test.go` abre el CSV por ruta relativa y valida 6 lecturas (2 parcelas × 3), incluidos `Timestamp`, `HumedadPct` y `TempC`.
+- **T1.3 cerrada**: Fase 1 queda completa salvo T1.2.
