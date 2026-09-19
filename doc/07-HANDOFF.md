@@ -4,27 +4,31 @@ Documento de retoma: qué se hizo, qué sigue y qué está bloqueado. Se actuali
 
 ## Estado actual
 
-- **Fase 1 — Pipeline satelital, en progreso.** T1.1 cerrada: autenticación OAuth2 validada **en vivo** contra Copernicus Data Space (token JWT OK).
+- **Fase 1 — Pipeline satelital, en progreso.** T1.1 (auth) y T1.2 (búsqueda STAC) cerradas; T1.2 validada **en vivo**: 15 items con `cloud_cover < 20` para la parcela La Serena `2W89+VG`.
 - Motor de sensores intacto y en verde: parser CSV (`internal/ingest`) + ET0 FAO-56 (`internal/analysis`); es el fallback.
-- Estructura: `pkg/copernicus` (ya con código), `internal/satellite`, `internal/ai`, `web`.
+- Estructura: `pkg/copernicus` (auth + búsqueda); `internal/satellite`, `internal/ai` y `web` siguen vacías.
 
 ## Último commit
 
-- `893dfbd` — `feat(copernicus): cliente OAuth2 client credentials para Copernicus Data Space` (validado en vivo: token JWT OK). Después entró `chore(copernicus): elimina .gitkeep vestigial`.
+- `d6fa587` — `feat(copernicus): búsqueda STAC por AOI con filtro de nubosidad` (validado en vivo: 15 items para La Serena `2W89+VG`; imagen más limpia con 0.19 % de nubes, 2026-09-01)
 
 ## Siguiente tarea
 
-- **`pkg/copernicus` — búsqueda STAC por AOI.** Implementar la consulta al catálogo STAC de CDSE: polígono **WKT** de la parcela (referencia: La Serena `2W89+VG`), filtro por **nubosidad** y colección **Sentinel-2 L2A**, para obtener las escenas candidatas.
-- Después, en la misma fase: descarga de B04/B08 → NDVI → Kcb → PNG (ver `doc/06-ROADMAP.md`).
+- **T1.3 — Descarga de bandas B04, B08 y SCL** para el AOI: usar los `assets[].href` de los items que devuelve `SearchByAOI`. `SCL` (Scene Classification Layer) se descarga para enmascarar nubes y píxeles inválidos antes de calcular el NDVI.
+- Después, en la misma fase: NDVI → Kcb → PNG (ver `doc/06-ROADMAP.md`).
 
 ## Blockers
 
-- **Endpoint STAC sin validar**: falta confirmar la URL del catálogo STAC de CDSE y el formato exacto de la consulta (colección, intersección por AOI, propiedad de nubosidad). TODO en `doc/05-DATA-SOURCES.md`.
-- Sin blockers técnicos: `go 1.23.0` operativo, `gh` autenticado como `andesdevroot`, registro en Copernicus hecho y **auth validado en vivo**.
+- Sin blockers técnicos: endpoint STAC validado en vivo, auth OAuth2 operativa, `gh` autenticado como `andesdevroot` y registro en Copernicus hecho.
+- Por confirmar al implementar T1.3: esquema de acceso de los `href` de los assets (HTTPS directo vs. requerir token también en la descarga).
+
+## Deuda técnica
+
+- **Parser WKT limitado**: `parseWKT` soporta solo `POINT` y `POLYGON` simple (sin `MULTIPOLYGON`, huecos anidados ni altitud). La **Fase 4 (web)** debe aceptar **GeoJSON directo** desde Leaflet, sin pasar por el parser WKT.
+- **Paginación STAC**: `limit: 100` fijo y sin seguimiento del `next` del FeatureCollection; en AOIs grandes podría truncar resultados.
 
 ## Decisiones recientes
 
-- **T1.1 cerrada**: `pkg/copernicus/client.go` obtiene token OAuth2 `client_credentials`; credenciales por entorno (`CDSE_CLIENT_ID`, `CDSE_CLIENT_SECRET`); validado contra CDSE real (token JWT OK). Tests con `httptest` (200 / 401 / sin credenciales / entorno).
-- **Búsqueda vía STAC**: las escenas Sentinel-2 L2A se obtendrán consultando un catálogo STAC (no scraping ni descarga manual), filtrando por AOI y nubosidad.
-- **Parcela de referencia**: La Serena `2W89+VG` (Plus Code) para las pruebas del pipeline.
-- **`.gitkeep` eliminado** de `pkg/copernicus` al existir código real en la carpeta.
+- **T1.2 cerrada y validada en vivo**: `SearchByAOI` consulta el catálogo STAC de CDSE por AOI (WKT → GeoJSON) y filtra la nubosidad **en Go** (no en el body), para mantener la consulta simple y debuggeable. Resultado real: 15 items, la imagen más limpia con 0.19 % de nubes (2026-09-01).
+- **SCL en la etapa siguiente**: la descarga incluirá la banda SCL para enmascarar nubes antes del NDVI.
+- **Reintentos**: backoff exponencial ante 5xx, configurable por cliente (`MaxRetries`, `RetryBaseDelay`).

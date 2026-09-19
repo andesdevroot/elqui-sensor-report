@@ -5,8 +5,8 @@
 ## Estado actual
 
 - Fase 0 — Refactor de identidad: **cerrada** (`elqui-eye`; el motor de sensores pasa a ser fallback).
-- Fase 1 — Pipeline satelital: **en progreso**. T1.1 (auth Copernicus) cerrada y validada en vivo; siguiente: **T1.2 (búsqueda STAC por AOI)**.
-- Retoma detallada (blockers y decisiones) en [doc/07-HANDOFF.md](doc/07-HANDOFF.md).
+- Fase 1 — Pipeline satelital: **en progreso**. T1.1 (auth Copernicus) y T1.2 (búsqueda STAC) cerradas y validadas en vivo; siguiente: **T1.3 (descarga de bandas)**.
+- Retoma detallada (blockers, deuda técnica y decisiones) en [doc/07-HANDOFF.md](doc/07-HANDOFF.md).
 
 ## Fase 0 — Refactor de identidad
 
@@ -16,8 +16,8 @@
 ## Fase 1 — Pipeline satelital
 
 - [x] T1.1: `pkg/copernicus` — autenticación OAuth2 client credentials con Copernicus Data Space — criterio cumplido: auth validado contra CDSE real, token JWT OK (`pkg/copernicus/client.go`)
-- [ ] T1.2: `pkg/copernicus` — búsqueda STAC por AOI (polígono WKT) con filtro de nubosidad ← siguiente
-- [ ] T1.3: descarga de bandas B04 (rojo) y B08 (NIR) para el AOI
+- [x] T1.2: `pkg/copernicus` — búsqueda STAC por AOI (polígono WKT) con filtro de nubosidad — criterio cumplido: validado en vivo, 15 items `cloud_cover < 20` para la parcela La Serena `2W89+VG`; imagen más limpia 0.19 % de nubes (2026-09-01) (`pkg/copernicus/search.go`)
+- [ ] T1.3: descarga de bandas B04 (rojo), B08 (NIR) y SCL (máscara de nubes) para el AOI ← siguiente
 - [ ] T1.4: `internal/satellite` — NDVI y conversión NDVI → Kcb
 - [ ] T1.5: exportación de un PNG de la parcela (NDVI)
 
