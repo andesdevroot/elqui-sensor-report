@@ -1,20 +1,25 @@
 # 05 — Fuentes de datos
 
-v1 prioriza dos fuentes: **DGA + Sentinel-2**. El resto queda documentado para no perder el hilo.
+Fuente principal: **Copernicus Data Space** (Sentinel-2 L2A). Complementarias: DGA, SMAP, SMOS y CIREN.
+
+## Copernicus Data Space — Sentinel-2 L2A (fuente principal)
+
+- Portal: https://dataspace.copernicus.eu/ — registro gratis; **ya hecho por el autor**.
+- Producto: **Sentinel-2 L2A** (reflectancia de superficie, corregida atmosféricamente).
+- Uso previsto (Fase 1):
+  - búsqueda por **AOI** (polígono en **WKT**) — la parcela específica del agricultor;
+  - filtro por **nubosidad** (porcentaje máximo de nubes);
+  - descarga de las bandas **B04 (rojo)** y **B08 (NIR)**.
+- Cálculo: `NDVI = (B08 - B04) / (B08 + B04)` → conversión a **Kcb**.
+- TODO: documentar el endpoint exacto y el flujo de autenticación una vez validados en Fase 1.
+- Alternativas si la API principal resulta engorrosa: `sentinel-images-downloader`, `georeader`, `phidown`.
 
 ## DGA — Sistema Hidrométrico
 
 - URL: https://dga.mop.gob.cl/
 - Qué aporta: información hidrométrica oficial de la Dirección General de Aguas (caudales, niveles y registros asociados).
 - TODO: documentar endpoint o formato de descarga (CSV, Excel, API) y condiciones de uso.
-- Rol en v1: **fuente prioritaria**.
-
-## Copernicus Sentinel-2
-
-- Acceso: [Copernicus Data Space](https://dataspace.copernicus.eu/) (registro gratis).
-- Qué aporta: imágenes multiespectrales; índices NDVI/NDWI para estimar estrés hídrico de la vegetación.
-- TODO: definir el mecanismo de obtención (descarga manual vs. API) y el preprocesamiento mínimo.
-- Rol en v1: **fuente prioritaria**.
+- Rol: complementaria (la ruta principal ya es satelital).
 
 ## CIREN — Coquimbo
 
@@ -34,9 +39,9 @@ v1 prioriza dos fuentes: **DGA + Sentinel-2**. El resto queda documentado para n
 - Acceso: Copernicus Data Space (gratis).
 - Rol: v2+.
 
-## Estrategia v1
+## Estrategia
 
-Priorizar **DGA + Sentinel-2**: son las fuentes más directas para el balance hídrico y el estrés hídrico. CIREN, SMAP y SMOS quedan para v2+: su resolución y formatos agregan complejidad que v1 no necesita.
+La ruta principal es satelital: Sentinel-2 L2A → NDVI → Kcb sobre el polígono de la parcela, combinado con ET0 FAO-56. El motor de sensores + ET0 queda como **fallback** cuando no hay imagen utilizable (p. ej. nubosidad persistente). DGA, SMAP, SMOS y CIREN quedan para v2+.
 
 ## Fuente de validación ET0
 
