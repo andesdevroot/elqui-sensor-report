@@ -1,59 +1,66 @@
-# elqui-sensor-report
+# elqui-eye
 
 ```text
          _                   _
-   ___  | |   __ _   _   _  (_)
-  / _ \ | |  / _` | | | | | | |
- |  __/ | | | (_| | | |_| | | |
-  \___| |_|  \__, |  \__,_| |_|
-                |_|
+   ___  | |   __ _   _   _  (_)           ___   _   _    ___
+  / _ \ | |  / _` | | | | | | |  _____   / _ \ | | | |  / _ \
+ |  __/ | | | (_| | | |_| | | | |_____| |  __/ | |_| | |  __/
+  \___| |_|  \__, |  \__,_| |_|          \___|  \__, |  \___|
+                |_|                             |___/
 
-   Eficiencia hídrica para el Valle del Elqui
-   v0.1.0-dev • by Cesar Rivas
+   riego satelital para pequeños agricultores de Coquimbo
+   v0.2.0-dev • by Cesar Rivas
 ```
 
 ![Go Version](https://img.shields.io/badge/Go-1.23+-00ADD8.svg?logo=go)
+![Satellite](https://img.shields.io/badge/Sentinel--2-L2A-2f6f4e.svg)
+![AI](https://img.shields.io/badge/DeepSeek-lenguaje_natural-4b6bfb.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-WIP-orange.svg)
 
-`elqui-sensor-report` es un CLI open source escrito en Go que procesa datos de sensores de humedad de suelo y genera reportes de eficiencia hídrica para agricultores del Valle del Elqui, Chile. Responde una pregunta concreta: **¿está cada parcela regando con el agua que realmente necesita?**
+`elqui-eye` es una herramienta satelital open source para pequeños agricultores del semiárido chileno (Región de Coquimbo). Combina imágenes **Sentinel-2 L2A**, evapotranspiración de referencia **ET0 (FAO-56)** y **DeepSeek** para traducir el estado hídrico de una parcela a una recomendación de riego en **mm/día** y en lenguaje natural.
 
-El proyecto cruza las lecturas de los sensores con la evapotranspiración de referencia (ET0) y datos públicos (DGA, Sentinel-2) para calcular consumo real vs. óptimo por período, y entrega un reporte Markdown con semáforo de eficiencia. Está construido sin dependencias externas: solo biblioteca estándar de Go.
+La misión es el acceso gratuito a una recomendación específica del predio: no un promedio regional, sino la imagen de *tu* parcela, su índice de vegetación (NDVI → Kcb) y el agua que corresponde reponer. Herramientas como **RiegaBien (UC)** y **PLAS (INIA)** resuelven partes del mismo problema; `elqui-eye` no compite con ellas: busca ser la capa open source que aporta transparencia, imagen satelital por parcela y explicación en lenguaje natural.
+
+El motor de análisis ya construido (parser CSV de sensores + ET0 Hargreaves-Samani validada contra FAO-56) se mantiene como **fallback** cuando no hay dato satelital disponible.
 
 ## Quick Start
 
 ```bash
-# 1. Clonar el repositorio (TODO: repo aún sin publicar; URL provisional)
+# 1. Clonar el repositorio
 git clone https://github.com/andesdevroot/elqui-sensor-report.git
 cd elqui-sensor-report
 
 # 2. Ejecutar la suite de tests
 go test -v ./...
 
-# 3. Compilar el binario optimizado
+# 3. Compilar el motor (CLI)
 go build -ldflags="-s -w" -o build/elqui ./cmd/elqui/main.go
 ```
 
-> **Estado WIP**: v1 en desarrollo (Fase 0). La CLI todavía no procesa datos reales; ver [doc/06-ROADMAP.md](doc/06-ROADMAP.md).
+> **Estado WIP**: la capa satelital (Fase 1) aún no existe; hoy funciona el motor de análisis. Ver [doc/06-ROADMAP.md](doc/06-ROADMAP.md).
 
 ## Estructura del proyecto
 
-Estructura objetivo de v1 (se va poblando con TDD en las próximas fases):
+Estructura objetivo (se puebla por fases):
 
 ```text
-elqui-sensor-report/
+elqui-eye/                      # repo andesdevroot/elqui-sensor-report
 ├── cmd/
-│   └── elqui/            # entry point del binario (main.go)
+│   ├── elqui/                  # CLI motor (análisis)
+│   └── elqui-web/              # servidor web
 ├── internal/
-│   ├── ingest/           # CSV de sensores → models
-│   ├── analysis/         # ET0, balance hídrico, eficiencia
-│   ├── report/           # render del reporte Markdown
-│   └── models/           # structs compartidos
+│   ├── ingest/                 # CSV de sensores → models
+│   ├── analysis/               # ET0 FAO-56, balance hídrico
+│   ├── satellite/              # NDVI, Kcb
+│   ├── ai/                     # DeepSeek (lenguaje natural)
+│   ├── report/                 # render del reporte
+│   └── models/                 # structs compartidos
 ├── pkg/
-│   ├── dga/              # datos públicos DGA
-│   └── sentinel/         # NDVI/NDWI (Sentinel-2)
-├── doc/                  # documentación — fuente de verdad
-├── testdata/             # CSV de ejemplo para tests
+│   └── copernicus/             # cliente Sentinel-2 L2A
+├── web/                        # HTML + HTMX + Leaflet
+├── doc/                        # documentación — fuente de verdad
+├── testdata/                   # CSV de ejemplo para tests
 ├── Design.md
 ├── Task.md
 ├── LICENSE

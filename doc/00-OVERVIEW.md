@@ -1,37 +1,51 @@
 # 00 — Visión general
 
-## ¿Qué es elqui-sensor-report?
+## Qué es elqui-eye
 
-`elqui-sensor-report` es un CLI open source escrito en Go que procesa datos de sensores de humedad de suelo y genera reportes de eficiencia hídrica para agricultores del Valle del Elqui, Chile.
+`elqui-eye` es una herramienta satelital open source para pequeños agricultores del semiárido chileno (Región de Coquimbo). Combina imágenes **Sentinel-2 L2A**, evapotranspiración de referencia **ET0 (FAO-56)** y **DeepSeek** para entregar una recomendación de riego específica de la parcela: cuánto reponer (mm/día) y por qué, en lenguaje natural.
 
-Responde una pregunta concreta: **¿está cada parcela regando con el agua que realmente necesita?**
+*Nombre de trabajo*: `elqui-eye`. El repositorio y el módulo Go conservan su nombre original `elqui-sensor-report` hasta que se decida el renombre completo.
 
 ## Problema que resuelve
 
-En el Valle del Elqui la escasez hídrica es estructural y la mayoría de los riegos se programa por calendario o intuición, sin medición de por medio. Sin una línea base de consumo real vs. demanda óptima, es imposible:
+En Coquimbo la escasez hídrica es estructural. El pequeño agricultor no dispone de una recomendación de riego ajustada a **su** predio: las guías son regionales, la asesoría técnica es escasa y las herramientas existentes no siempre llegan al agricultor ni explican el fundamento de la recomendación.
 
-- validar la eficiencia hídrica **individual** de cada parcela;
-- detectar sobre-riego (desperdicio, lixiviación) o sub-riego (estrés hídrico);
-- justificar decisiones de riego con datos.
+`elqui-eye` apunta a tres brechas concretas:
 
-`elqui-sensor-report` cruza las lecturas del sensor de humedad con estimaciones de evapotranspiración de referencia (ET0) y datos públicos, y entrega un reporte legible con semáforo de eficiencia por período.
+- **Escala del predio**: imagen satelital del polígono específico, no un promedio regional.
+- **Transparencia**: cada recomendación es auditable paso a paso (NDVI → Kcb → ET0 → mm/día); el código es open source.
+- **Lenguaje natural**: la salida se explica en español de Chile, no como una tabla de coeficientes.
+
+## Relación con otras herramientas
+
+`elqui-eye` **no compite** con las herramientas públicas chilenas; busca ser una capa complementaria y open source:
+
+- **RiegaBien (Pontificia Universidad Católica de Chile)** — herramienta pública de apoyo a la decisión de riego.
+- **PLAS (INIA)** — herramienta del Instituto de Investigaciones Agropecuarias.
+- TODO: documentar el alcance, las fuentes y la cobertura de ambas antes de publicar comparaciones.
+
+El aporte que `elqui-eye` busca agregar es la combinación de imagen satelital por parcela + explicación en lenguaje natural + código abierto, sobre fuentes gratuitas (Copernicus, FAO-56).
 
 ## Usuario objetivo
 
-- **Agricultor pequeño/mediano**: saber si su riego es eficiente sin contratar un estudio.
-- **Agrónomo**: análisis repetible por parcela para asesorar a sus clientes.
-- **Cooperativa**: comparar eficiencia entre parcelas asociadas y priorizar apoyo técnico.
+- **Pequeño agricultor de Coquimbo**: saber cuánto y cuándo regar, sin contratar un estudio.
+- **Asesor técnico o cooperativa**: recomendación trazable, parcela por parcela.
+- **Comunidad open source**: replicar el método en otros valles semiáridos.
 
-## Alcance v1
+## Alcance
 
-- Ingesta de un CSV de sensor de humedad de suelo.
-- Integración con datos de la DGA (TODO: documentar formato de descarga en `doc/05-DATA-SOURCES.md`).
-- Cálculo de ET0 y balance hídrico por período.
-- Reporte en Markdown con semáforo de eficiencia.
+- **Motor de análisis (ya construido)**: parser CSV de sensores + ET0 Hargreaves-Samani validada contra FAO-56. Se mantiene como **fallback** cuando no hay dato satelital.
+- **Pipeline satelital**: Sentinel-2 L2A vía Copernicus Data Space → NDVI → Kcb.
+- **Recomendación**: ET0 × Kcb → mm/día.
+- **Lenguaje natural**: capa DeepSeek.
+- **Web mínima**: Go + HTMX + Leaflet.
 
-## Fuera de alcance v1
+## Fuera de alcance
 
-- Drones y teledetección embarcada.
-- Dashboard web.
-- Aplicación móvil.
-- Integraciones CIREN, SMAP y SMOS (planificadas para v2+, ver `doc/05-DATA-SOURCES.md`).
+- Drones y sensores propios.
+- App móvil nativa.
+- Recomendaciones agronómicas sin validación de campo (ver Fase 5 de `doc/06-ROADMAP.md`).
+
+## Estado
+
+Fase 0 (refactor de identidad) en curso. Ver `doc/06-ROADMAP.md`.

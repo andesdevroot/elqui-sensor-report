@@ -4,23 +4,23 @@
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│                          cmd/elqui                           │
-│                    main.go — entry point                     │
+│        cmd/elqui (CLI motor)  ·  cmd/elqui-web (web)         │
+│                 web/ (HTML + HTMX + Leaflet)                 │
 └───────────────────────────────┬──────────────────────────────┘
                                 │
                                 ▼
 ┌──────────────────────────────────────────────────────────────┐
 │                          internal/                           │
 │                                                              │
-│       ingest ───────────► analysis ───────────► report       │
-│       CSV → lecturas      ET0 + balance         Markdown     │
+│          satellite (NDVI, Kcb)   ►   ai (DeepSeek)           │
+│           ingest ► analysis (ET0 FAO-56) ► report            │
 └───────────────────────────────┬──────────────────────────────┘
                                 │
                                 ▼
 ┌──────────────────────────────────────────────────────────────┐
 │                             pkg/                             │
 │                                                              │
-│        dga (datos DGA)          sentinel (NDVI/NDWI)         │
+│ copernicus — Sentinel-2 L2A (AOI WKT · nubosidad · B04/B08)  │
 └───────────────────────────────┬──────────────────────────────┘
                                 │
                                 ▼
@@ -32,25 +32,48 @@
 
 **Regla de dependencias**: `cmd` orquesta e importa `internal/` y `pkg/`; `internal/` importa `pkg/` y `models`; `pkg/` no importa `internal/`; `internal/models` no importa nada del proyecto.
 
+## Componentes
+
+- `cmd/elqui` — CLI motor (análisis y recomendación).
+- `cmd/elqui-web` — servidor web mínimo.
+- `internal/satellite` — índices de vegetación: NDVI y conversión a Kcb.
+- `internal/ai` — capa DeepSeek: traduce los números a lenguaje natural (es-CL).
+- `internal/analysis` — ET0 FAO-56 y balance hídrico (motor existente).
+- `internal/ingest` — parser CSV de sensores (motor existente; fallback).
+- `internal/report` — render de reportes.
+- `pkg/copernicus` — cliente de Copernicus Data Space (Sentinel-2 L2A).
+- `web/` — HTML + HTMX + Leaflet.
+
 ## Decisión: Go
 
-- **stdlib robusta**: `encoding/csv`, `encoding/json`, `net/http` y `time` cubren todo lo necesario en v1.
+- **stdlib robusta**: `encoding/csv`, `encoding/json`, `net/http` y `time` cubren el motor y los clientes HTTP (Copernicus, DeepSeek).
 - **Binario estático**: `go build -ldflags="-s -w"` produce un único binario, sin runtime ni instalación.
 - **Consistencia con promptc**: mismo stack, estructura y metodología que el proyecto hermano del mismo autor (`github.com/andesdevroot/promptc`).
 
-## Principio: sin dependencias externas en v1
+## Principio: sin dependencias Go externas
 
-`go.mod` no declara dependencias. Si una tarea parece requerir una librería externa, primero se busca una alternativa con stdlib; si no existe, la decisión se documenta en este archivo antes de agregarla.
+`go.mod` no declara dependencias. Las APIs externas (Copernicus, DeepSeek) se consumen con `net/http` de la stdlib. Si una tarea parece requerir una librería externa, primero se busca una alternativa con stdlib; si no existe, la decisión se documenta aquí antes de agregarla.
 
 ## Flujo de datos
+
+Ruta satelital (principal):
+
+```text
+AOI (WKT) → Copernicus (B04, B08) → NDVI → Kcb → ET0 (FAO-56) × Kcb → mm/día → DeepSeek → lenguaje natural → CLI / web
+```
+
+1. `pkg/copernicus` busca la escena Sentinel-2 L2A del AOI, filtra por nubosidad y descarga B04/B08.
+2. `internal/satellite` calcula NDVI y lo convierte a Kcb (coeficiente de cultivo basal).
+3. `internal/analysis` combina ET0 con Kcb → recomendación en mm/día.
+4. `internal/ai` traduce la recomendación a lenguaje natural (es-CL).
+5. `internal/report` y `web/` presentan el resultado.
+
+Ruta de sensor (fallback, ya implementada):
 
 ```text
 CSV del sensor → []SensorReading → ET0Result → balance hídrico → EfficiencyReport → Markdown
 ```
 
-1. `ingest` parsea el CSV del sensor y valida invariantes → `[]SensorReading`.
-2. `analysis` calcula la ET0 (Hargreaves-Samani) → `ET0Result`.
-3. `analysis` compara el consumo real contra el óptimo del período → `EfficiencyReport` (con semáforo).
-4. `report` renderiza el Markdown final que recibe el agricultor.
+Cuando no hay imagen satelital utilizable (p. ej. nubosidad persistente), el motor existente produce el reporte a partir de las lecturas del sensor.
 
-Las fuentes externas (DGA, Sentinel-2) se consultan desde `pkg/`; su estado y TODOs viven en `doc/05-DATA-SOURCES.md`.
+Las fuentes y su estado se documentan en `doc/05-DATA-SOURCES.md`.
