@@ -1,6 +1,6 @@
 // Package copernicus implementa el cliente HTTP de Copernicus Data Space
-// (Sentinel-2 L2A): autenticación OAuth2 y, más adelante, búsqueda por AOI y
-// descarga de bandas.
+// (Sentinel-2 L2A): autenticación OAuth2, búsqueda STAC por AOI y, más
+// adelante, descarga de bandas.
 package copernicus
 
 import (
@@ -28,7 +28,8 @@ const (
 // DefaultTimeout es el timeout por defecto de las llamadas HTTP.
 const DefaultTimeout = 30 * time.Second
 
-// ErrUnauthorized se devuelve cuando el token endpoint rechaza las credenciales.
+// ErrUnauthorized se devuelve cuando el token endpoint o el catálogo STAC
+// rechazan las credenciales o el token (401).
 var ErrUnauthorized = errors.New("copernicus: credenciales rechazadas (401)")
 
 // Client es el cliente HTTP de Copernicus Data Space.
@@ -39,19 +40,28 @@ type Client struct {
 	// las variables de entorno CDSE_CLIENT_ID y CDSE_CLIENT_SECRET.
 	ClientID     string
 	ClientSecret string
+	// SearchURL es el endpoint del catálogo STAC; si está vacío se usa DefaultSearchURL.
+	SearchURL string
+	// MaxRetries es el número de reintentos ante respuestas 5xx del catálogo STAC.
+	MaxRetries int
+	// RetryBaseDelay es la espera base del backoff exponencial (base * 2^n).
+	RetryBaseDelay time.Duration
 	// HTTPClient permite configurar timeout y transporte; si es nil se usa uno
 	// con DefaultTimeout. Las credenciales nunca se escriben en el código.
 	HTTPClient *http.Client
 }
 
-// NewClient construye un Client con el endpoint y el timeout por defecto,
+// NewClient construye un Client con los endpoints y defaults del paquete,
 // tomando las credenciales de CDSE_CLIENT_ID y CDSE_CLIENT_SECRET.
 func NewClient() *Client {
 	return &Client{
-		TokenURL:     DefaultTokenURL,
-		ClientID:     os.Getenv(EnvClientID),
-		ClientSecret: os.Getenv(EnvClientSecret),
-		HTTPClient:   &http.Client{Timeout: DefaultTimeout},
+		TokenURL:       DefaultTokenURL,
+		ClientID:       os.Getenv(EnvClientID),
+		ClientSecret:   os.Getenv(EnvClientSecret),
+		SearchURL:      DefaultSearchURL,
+		MaxRetries:     DefaultMaxRetries,
+		RetryBaseDelay: DefaultRetryBaseDelay,
+		HTTPClient:     &http.Client{Timeout: DefaultTimeout},
 	}
 }
 
