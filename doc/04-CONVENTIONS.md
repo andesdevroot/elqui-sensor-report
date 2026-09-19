@@ -8,8 +8,8 @@
 
 ## Paquetes
 
-- `internal/<dominio>` para lo específico del proyecto (`ingest`, `analysis`, `report`, `models`).
-- `pkg/<lib>` solo si la librería es reutilizable fuera del proyecto (`dga`, `sentinel`).
+- `internal/<dominio>` para lo específico del proyecto (`ingest`, `analysis`, `satellite`, `ai`, `report`, `models`).
+- `pkg/<lib>` solo si la librería es reutilizable fuera del proyecto (`copernicus`).
 - Sin código suelto en la raíz; todo archivo pertenece a un paquete.
 
 ## Errores
@@ -38,8 +38,7 @@
 
 ## Branches
 
-- `main` protegida una vez publicado el repositorio; features en `feat/<nombre-corto>`, fixes en `fix/<nombre-corto>`.
-- TODO: definir si la rama actual `master` se renombra a `main`.
+- `main` es la rama por defecto del repositorio publicado; features en `feat/<nombre-corto>`, fixes en `fix/<nombre-corto>`.
 
 ## Idioma
 

@@ -33,12 +33,11 @@ cd elqui-sensor-report
 
 # 2. Ejecutar la suite de tests
 go test -v ./...
-
-# 3. Compilar el motor (CLI)
-go build -ldflags="-s -w" -o build/elqui ./cmd/elqui/main.go
 ```
 
 > **Estado WIP**: la capa satelital (Fase 1) aún no existe; hoy funciona el motor de análisis. Ver [doc/06-ROADMAP.md](doc/06-ROADMAP.md).
+>
+> **CLI en construcción (Fase 2)**: el binario `cmd/elqui` todavía no existe, por eso no se documenta un `go build` aquí.
 
 ## Estructura del proyecto
 
