@@ -1,45 +1,45 @@
 # 06 — Roadmap
 
-Cada tarea se cierra con un commit atómico y su criterio de aceptación cumplido (ver `doc/03-METHODOLOGY.md`).
+Roadmap satelital en 5 fases, más la Fase 0 de refactor de identidad. Cada tarea se cierra con un commit atómico y su criterio de aceptación cumplido (ver `doc/03-METHODOLOGY.md`).
 
-## Fase 0 — Setup (en progreso ✅)
+## Fase 0 — Refactor de identidad (en progreso ✅)
 
-- Toolchain de Go instalada (`go 1.23.0`).
-- Repositorio git inicializado (rama `master`, aún sin commits ni remoto — TODO: crear repositorio remoto).
-- `doc/` creada como fuente de verdad (este commit).
+Redefinir el proyecto como herramienta satelital open source `elqui-eye`, manteniendo el motor existente como fallback.
 
-## Fase 1 — Ingesta
+- **Tareas**: actualizar `README.md`, `doc/00`, `doc/01`, `doc/05` y `doc/06`; crear la estructura base (`pkg/copernicus`, `internal/satellite`, `internal/ai`, `web`).
+- **Entregables**: documentación coherente con la nueva misión; carpetas creadas con `.gitkeep`.
+- **Criterios de aceptación**: `go test ./...` en verde (el motor no se rompe) y `doc/` sin referencias a un CLI de sensores como misión principal.
 
-**T1.1 — Parser CSV de sensores**
-Criterio de aceptación: `go test ./internal/ingest/...` en verde; `ParseSensorCSV` convierte el CSV del sensor en `[]models.SensorReading` y rechaza lecturas que violan los invariantes de `doc/02-DATA-MODEL.md`.
+## Fase 1 — Pipeline satelital
 
-**T1.2 — Cliente DGA**
-Criterio de aceptación: TODO — se define al documentar la fuente en `doc/05-DATA-SOURCES.md`.
+- **Tareas**: cliente `pkg/copernicus` (autenticación, búsqueda por AOI en WKT, filtro por nubosidad, descarga de B04/B08); `internal/satellite` (cálculo de NDVI y conversión NDVI → Kcb); exportación de un PNG de la parcela.
+- **Entregables**: `pkg/copernicus/`, `internal/satellite/`, un PNG de NDVI para una parcela de prueba en Coquimbo.
+- **Criterios de aceptación**: dado un AOI real, el pipeline obtiene las bandas y produce NDVI y PNG reproducibles; tests con bandas de ejemplo (sin red) más un test de integración contra la API marcado como opcional.
 
-**T1.3 — Tests de integración**
-Criterio de aceptación: pipeline `CSV → models` de punta a punta sobre un archivo de `testdata/`, sin mocks.
+## Fase 2 — Recomendación ET0 × Kcb
 
-## Fase 2 — Análisis
+- **Tareas**: integrar ET0 (motor existente) con Kcb satelital; calcular la recomendación diaria en mm/día; balance por período.
+- **Entregables**: `internal/analysis` extendido; recomendación por parcela.
+- **Criterios de aceptación**: recomendación en mm/día calculada con tests de tabla y casos documentados con fuente.
 
-**T2.1 — ET0 Hargreaves-Samani**
-Criterio de aceptación: `ET0Result` calculado desde las temperaturas del sensor; tests con casos conocidos (TODO: definir fuente de validación).
+## Fase 3 — Capa DeepSeek
 
-**T2.2 — Balance hídrico**
-Criterio de aceptación: consumo real vs. óptimo por período, con tests de tabla.
+- **Tareas**: cliente `internal/ai` (net/http); prompt de traducción a lenguaje natural (es-CL); manejo de errores y timeouts; no enviar datos sensibles.
+- **Entregables**: `internal/ai/`, texto de recomendación en español de Chile.
+- **Criterios de aceptación**: dada una recomendación numérica, la capa produce un texto es-CL; fallback explícito si la API no responde.
 
-**T2.3 — Eficiencia y semáforo**
-Criterio de aceptación: `EficienciaPct` y `Semaforo` calculados según los umbrales que se definan en `doc/02-DATA-MODEL.md` (TODO).
+## Fase 4 — Web mínima
 
-## Fase 3 — Reporte
+- **Tareas**: servidor Go + HTMX + Leaflet; dibujar el polígono de la parcela; mostrar NDVI y la recomendación.
+- **Entregables**: `cmd/elqui-web`, `web/`.
+- **Criterios de aceptación**: en local, dibujar un polígono y recibir la recomendación en pantalla.
 
-**T3.1 — Reporte Markdown con semáforo**
-Criterio de aceptación: la CLI genera un `.md` legible a partir de un `EfficiencyReport`.
+## Fase 5 — Validación y publicación
 
-**T3.2 — Recomendaciones en es-CL**
-Criterio de aceptación: sección de recomendaciones en español de Chile, derivada del semáforo.
+- **Tareas**: validar con al menos un agricultor/asesor de Coquimbo; contrastar con RiegaBien / PLAS; publicar (LinkedIn, Reddit, universidades).
+- **Entregables**: caso de validación documentado; anuncio público.
+- **Criterios de aceptación**: validación de campo registrada y release publicada.
 
-## Fase 4 — Release v0.1.0
+## Nota sobre el roadmap anterior
 
-**T4.1 — Release**
-Entregables: README final, `install.sh`, LICENSE, tag `v0.1.0`.
-Criterio de aceptación: `go build` limpio en una máquina limpia y tag publicado con notas de release.
+Las tareas del roadmap previo se re-encuadran: el parser CSV y ET0 quedan **cerrados** y pasan a ser el motor de fallback; el cliente DGA (T1.2) queda **parked**, porque la ruta principal ahora es satelital.
