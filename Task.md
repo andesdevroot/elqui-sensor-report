@@ -1,37 +1,49 @@
 # Task — cola de trabajo
 
-> Ver [doc/06-ROADMAP.md](doc/06-ROADMAP.md) para el detalle de fases y criterios de aceptación.
+> Ver [doc/06-ROADMAP.md](doc/06-ROADMAP.md) para el detalle de fases, entregables y criterios de aceptación.
 
 ## Estado actual
 
-- Fase 1 — Ingesta: T1.1, T1.3 y **T1.4** cerradas; T1.2 sigue bloqueada por falta de documentación de la fuente DGA.
-- Fase 2 — Análisis: **T2.1 cerrada** (ET0 Hargreaves-Samani validada contra FAO-56); siguiente: **T2.2 (balance hídrico)**.
+- Fase 0 — Refactor de identidad: **cerrada** (`elqui-eye`; el motor de sensores pasa a ser fallback).
+- Fase 1 — Pipeline satelital: **siguiente**. Arranca por `pkg/copernicus` (autenticación + búsqueda por AOI).
 - Retoma detallada (blockers y decisiones) en [doc/07-HANDOFF.md](doc/07-HANDOFF.md).
 
-## Fase 0 — Setup
+## Fase 0 — Refactor de identidad
 
-- [x] Toolchain de Go instalada (`go 1.23.0`)
-- [x] Repositorio git inicializado (rama `main`)
-- [x] `doc/` creada como fuente de verdad
+- [x] Documentación reencuadrada a `elqui-eye` (`README.md`, `doc/00`, `doc/01`, `doc/05`, `doc/06`)
+- [x] Estructura base creada (`pkg/copernicus`, `internal/satellite`, `internal/ai`, `web`)
 
-## Fase 1 — Ingesta
+## Fase 1 — Pipeline satelital
 
-- [x] T1.1: parser CSV de sensores — criterio cumplido: `go test ./internal/ingest/...` en verde, caminos de error cubiertos (`internal/models/sensor.go`, `internal/ingest/csv.go`, `internal/ingest/csv_test.go`)
-- [ ] T1.2: cliente DGA — bloqueada: criterio TODO (se define al documentar la fuente en `doc/05-DATA-SOURCES.md`)
-- [x] T1.3: tests de integración CSV → models — criterio cumplido: pipeline archivo → models sobre `testdata/sensor_sample.csv`, sin mocks (`internal/ingest/integration_test.go`)
-- [x] T1.4: tolerancia a CSV exportados desde Excel (BOM UTF-8, espacios en header, CRLF) — criterio cumplido: tests unitarios + fixture `testdata/sensor_sample_excel.csv` en verde (`internal/ingest/csv.go`)
+- [ ] T1.1: `pkg/copernicus` — autenticación con Copernicus Data Space y búsqueda por AOI (polígono WKT) con filtro de nubosidad ← siguiente
+- [ ] T1.2: descarga de bandas B04 (rojo) y B08 (NIR) para el AOI
+- [ ] T1.3: `internal/satellite` — NDVI y conversión NDVI → Kcb
+- [ ] T1.4: exportación de un PNG de la parcela (NDVI)
 
-## Fase 2 — Análisis
+## Fase 2 — Recomendación ET0 × Kcb
 
-- [x] T2.1: ET0 Hargreaves-Samani — criterio cumplido: validada contra FAO-56 (`internal/analysis/et0.go`; casos en `doc/05-DATA-SOURCES.md`)
-- [ ] T2.2: balance hídrico — criterio: consumo real vs. óptimo por período con tests de tabla ← siguiente
-- [ ] T2.3: eficiencia y semáforo — criterio: `EficienciaPct` + `Semaforo` por umbrales documentados
+- [ ] T2.1: integrar ET0 (motor existente) con Kcb satelital
+- [ ] T2.2: recomendación diaria en mm/día, con tests de tabla
+- [ ] T2.3: CLI `cmd/elqui` — comando de recomendación y build del binario
 
-## Fase 3 — Reporte
+## Fase 3 — Capa DeepSeek
 
-- [ ] T3.1: reporte Markdown con semáforo — criterio: salida `.md` legible generada desde un `EfficiencyReport`
-- [ ] T3.2: recomendaciones es-CL — criterio: sección de recomendaciones en español de Chile
+- [ ] T3.1: `internal/ai` — cliente DeepSeek con `net/http`, timeouts y manejo de errores
+- [ ] T3.2: prompt de traducción a lenguaje natural (es-CL) y fallback si la API no responde
 
-## Fase 4 — Release v0.1.0
+## Fase 4 — Web mínima
 
-- [ ] T4.1: README final + `install.sh` + LICENSE + tag `v0.1.0` — criterio: build limpio + tag publicado
+- [ ] T4.1: `cmd/elqui-web` + `web/` (HTML + HTMX + Leaflet)
+- [ ] T4.2: dibujar el polígono de la parcela y mostrar NDVI + recomendación
+
+## Fase 5 — Validación y publicación
+
+- [ ] T5.1: validación con al menos un agricultor/asesor de Coquimbo
+- [ ] T5.2: contraste con RiegaBien / PLAS y publicación (LinkedIn, Reddit, universidades)
+
+## Motor de sensores (fallback)
+
+Ya construido y en verde; se usa cuando no hay imagen satelital utilizable.
+
+- [x] Parser CSV de sensores con tolerancia a export de Excel (`internal/ingest`)
+- [x] ET0 Hargreaves-Samani validada contra FAO-56 (`internal/analysis`)
