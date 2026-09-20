@@ -33,7 +33,7 @@
 
 ## Datos de prueba
 
-- Los archivos de `testdata/` y los fixtures de test son **inmutables**: representan un caso fijo y versionado.
+- Los fixtures de test (como `internal-go-archive/testdata/`) son **inmutables**: representan un caso fijo y versionado.
 - Si necesitas otro caso, crea un archivo nuevo; nunca modifiques uno existente.
 
 ## Commits
