@@ -22,7 +22,7 @@
 
 La misión es el acceso gratuito a una recomendación específica del predio: no un promedio regional, sino la imagen de *tu* parcela, su índice de vegetación (NDVI → Kcb) y el agua que corresponde reponer. Herramientas como **RiegaBien (UC)** y **PLAS (INIA)** resuelven partes del mismo problema; `elqui-eye` no compite con ellas: busca ser la capa open source que aporta transparencia, imagen satelital por parcela y explicación en lenguaje natural.
 
-El motor de análisis ya construido (parser CSV de sensores + ET0 Hargreaves-Samani validada contra FAO-56) se mantiene como **fallback** cuando no hay dato satelital disponible.
+El motor Go ya construido (parser CSV de sensores + ET0 Hargreaves-Samani validada contra FAO-56) se mantiene como **fallback** cuando no hay dato satelital disponible.
 
 ## Quick Start
 
@@ -31,13 +31,17 @@ El motor de análisis ya construido (parser CSV de sensores + ET0 Hargreaves-Sam
 git clone https://github.com/andesdevroot/elqui-sensor-report.git
 cd elqui-sensor-report
 
-# 2. Ejecutar la suite de tests
+# 2. Motor Go: suite de tests
 go test -v ./...
+
+# 3. Pipeline satelital (Python) — llega en la Fase 1
+pip install -r scripts/requirements.txt
+python scripts/ndvi_probe.py --aoi "POINT(-71.24894 -29.90453)" --days 90
 ```
 
-> **Estado WIP**: la capa satelital (Fase 1) aún no existe; hoy funciona el motor de análisis. Ver [doc/06-ROADMAP.md](doc/06-ROADMAP.md).
+> **Estado WIP**: hoy funciona el motor Go (ET0 FAO-56 + parser CSV). El pipeline satelital (Fase 1), la capa de lenguaje natural (Fase 3) y la web (Fase 4) están en construcción; ver [doc/06-ROADMAP.md](doc/06-ROADMAP.md).
 >
-> **CLI en construcción (Fase 2)**: el binario `cmd/elqui` todavía no existe, por eso no se documenta un `go build` aquí.
+> **`scripts/ndvi_probe.py` y `scripts/requirements.txt` todavía no existen**: el comando 3 es el uso previsto una vez implementada la Fase 1.
 
 ## Estructura del proyecto
 
@@ -46,18 +50,16 @@ Estructura objetivo (se puebla por fases):
 ```text
 elqui-eye/                      # repo andesdevroot/elqui-sensor-report
 ├── cmd/
-│   ├── elqui/                  # CLI motor (análisis)
-│   └── elqui-web/              # servidor web
+│   └── elqui-web/              # servidor web                            [Fase 4]
 ├── internal/
-│   ├── ingest/                 # CSV de sensores → models
-│   ├── analysis/               # ET0 FAO-56, balance hídrico
-│   ├── satellite/              # NDVI, Kcb
-│   ├── ai/                     # DeepSeek (lenguaje natural)
-│   ├── report/                 # render del reporte
+│   ├── analysis/               # ET0 FAO-56, Kcb, recomendación (mm/día)
+│   ├── ingest/                 # CSV de sensores → models (fallback)
 │   └── models/                 # structs compartidos
-├── pkg/
-│   └── copernicus/             # cliente Sentinel-2 L2A
-├── web/                        # HTML + HTMX + Leaflet
+├── scripts/                    # pipeline satelital (Python)
+│   └── ndvi_probe.py           # NDVI por ventana sobre el AOI            [Fase 1]
+├── archive/
+│   └── copernicus/             # cliente Copernicus archivado (histórico)
+├── web/                        # HTML + HTMX + Leaflet                    [Fase 4]
 ├── doc/                        # documentación — fuente de verdad
 ├── testdata/                   # CSV de ejemplo para tests
 ├── Design.md

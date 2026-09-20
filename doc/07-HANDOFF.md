@@ -4,31 +4,30 @@ Documento de retoma: qué se hizo, qué sigue y qué está bloqueado. Se actuali
 
 ## Estado actual
 
-- **Fase 1 — Pipeline satelital, en progreso.** T1.1 (auth) y T1.2 (búsqueda STAC) cerradas; T1.2 validada **en vivo**: 15 items con `cloud_cover < 20` para la parcela La Serena `2W89+VG`.
-- Motor de sensores intacto y en verde: parser CSV (`internal/ingest`) + ET0 FAO-56 (`internal/analysis`); es el fallback.
-- Estructura: `pkg/copernicus` (auth + búsqueda); `internal/satellite`, `internal/ai` y `web` siguen vacías.
+- **Fase 0 — Reset y limpieza: completa.** `pkg/copernicus` quedó archivado en `archive/copernicus/` (tag `copernicus-archive`) y **Earth Search** reemplaza a Copernicus Data Space como fuente satelital.
+- **Fase 1 — Pipeline satelital mínimo: arrancando.**
+- Motor existente en verde: parser CSV (`internal/ingest`) + ET0 FAO-56 (`internal/analysis`).
 
 ## Último commit
 
-- `d6fa587` — `feat(copernicus): búsqueda STAC por AOI con filtro de nubosidad` (validado en vivo: 15 items para La Serena `2W89+VG`; imagen más limpia con 0.19 % de nubes, 2026-09-01)
+- `aa847f1` — `docs(roadmap): reescribe roadmap como copiloto de riego`
 
 ## Siguiente tarea
 
-- **T1.3 — Descarga de bandas B04, B08 y SCL** para el AOI: usar los `assets[].href` de los items que devuelve `SearchByAOI`. `SCL` (Scene Classification Layer) se descarga para enmascarar nubes y píxeles inválidos antes de calcular el NDVI.
-- Después, en la misma fase: NDVI → Kcb → PNG (ver `doc/06-ROADMAP.md`).
+- **Crear `scripts/ndvi_probe.py`** con `pystac-client` + `rasterio`: búsqueda STAC en Earth Search (**anónimo**), lectura **por ventana** del AOI sobre COG y cálculo del NDVI medio. Validar con la parcela La Serena `2W89+VG`.
+- Después, en la misma fase: `scripts/requirements.txt` y la validación documentada de la parcela.
 
 ## Blockers
 
-- Sin blockers técnicos: endpoint STAC validado en vivo, auth OAuth2 operativa, `gh` autenticado como `andesdevroot` y registro en Copernicus hecho.
-- Por confirmar al implementar T1.3: esquema de acceso de los `href` de los assets (HTTPS directo vs. requerir token también en la descarga).
+- Ninguno.
 
 ## Deuda técnica
 
-- **Parser WKT limitado**: `parseWKT` soporta solo `POINT` y `POLYGON` simple (sin `MULTIPOLYGON`, huecos anidados ni altitud). La **Fase 4 (web)** debe aceptar **GeoJSON directo** desde Leaflet, sin pasar por el parser WKT.
-- **Paginación STAC**: `limit: 100` fijo y sin seguimiento del `next` del FeatureCollection; en AOIs grandes podría truncar resultados.
+- **`archive/copernicus/` archivado, sin mantenimiento**: su descarga rechazaba con 401 el token de cuenta de servicio y el redirect perdía el header de autorización. Referencia histórica; no se usa.
+- **Cita INIA pendiente**: `doc/05` marca como TODO la cita exacta del paper que valida `Kcb = 1.51 × NDVI − 0.23` en Coquimbo.
 
 ## Decisiones recientes
 
-- **T1.2 cerrada y validada en vivo**: `SearchByAOI` consulta el catálogo STAC de CDSE por AOI (WKT → GeoJSON) y filtra la nubosidad **en Go** (no en el body), para mantener la consulta simple y debuggeable. Resultado real: 15 items, la imagen más limpia con 0.19 % de nubes (2026-09-01).
-- **SCL en la etapa siguiente**: la descarga incluirá la banda SCL para enmascarar nubes antes del NDVI.
-- **Reintentos**: backoff exponencial ante 5xx, configurable por cliente (`MaxRetries`, `RetryBaseDelay`).
+- **Earth Search reemplaza a Copernicus**: catálogo STAC público y **anónimo** (sin OAuth, sin tokens, sin redirects rotos). Se adoptó **Python** (`pystac-client` + `rasterio`) para el pipeline satelital, porque es el ecosistema real para rasters; **Go** se queda con el motor ET0 y la web.
+- **`pkg/copernicus` archivado, no borrado**, con el tag `copernicus-archive` como referencia.
+- **Directorios vestigiales eliminados**: `internal/satellite`, `internal/ai` y `cmd/elqui`.

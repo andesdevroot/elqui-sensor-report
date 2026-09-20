@@ -6,11 +6,20 @@
 - Nombres cortos y en inglés (`r`, `nm`, `pct`, `et0`), sin abreviaturas inventadas.
 - Todo símbolo exportado lleva un comentario que empieza con su nombre.
 
-## Paquetes
+## Estilo de código Python
 
-- `internal/<dominio>` para lo específico del proyecto (`ingest`, `analysis`, `satellite`, `ai`, `report`, `models`).
-- `pkg/<lib>` solo si la librería es reutilizable fuera del proyecto (`copernicus`).
-- Sin código suelto en la raíz; todo archivo pertenece a un paquete.
+- **PEP 8** siempre; formato con **`black`**.
+- **Type hints** en toda función pública (`def ndvi_medio(aoi: str, dias: int = 90) -> float:`).
+- Un script = una responsabilidad; argumentos por CLI (`argparse`) y salida legible.
+- Dependencias fijadas en `scripts/requirements.txt`.
+
+## Paquetes y directorios
+
+- `internal/<dominio>` para lo específico del proyecto en Go; hoy: `analysis` (motor: ET0, Kcb, recomendación), `ingest` (parser CSV) y `models`.
+- `scripts/` para el pipeline satelital en Python (`ndvi_probe.py`, `kcb.py`).
+- `pkg/<lib>` solo si una librería Go es reutilizable fuera del proyecto; hoy no hay ninguna.
+- `archive/` para código retirado que se conserva como referencia histórica (sin mantenimiento).
+- Sin código suelto en la raíz.
 
 ## Errores
 
