@@ -15,3 +15,7 @@ coverage.out
 # Toolchain y descargas grandes
 go1.23.0.linux-amd64.tar.gz
 *.tar.gz
+.venv/
+
+# Archivos históricos de Go (motor archivado en Fase 0)
+*.archived
