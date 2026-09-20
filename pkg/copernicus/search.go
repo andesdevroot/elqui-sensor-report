@@ -38,6 +38,12 @@ type STACItem struct {
 // Asset es un recurso descargable de una escena (p. ej. la banda B04).
 type Asset struct {
 	Href string `json:"href"`
+	// Alternate contiene ubicaciones alternativas del asset (p. ej. "https").
+	Alternate map[string]struct{ Href string } `json:"alternate"`
+	// FileSize es el tamaño del recurso en bytes, cuando el catálogo lo informa.
+	FileSize int64 `json:"file:size"`
+	// Type es el tipo MIME del recurso (p. ej. image/jp2).
+	Type string `json:"type"`
 }
 
 // searchRequest es el cuerpo de la consulta STAC.
