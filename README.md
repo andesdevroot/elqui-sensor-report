@@ -7,76 +7,87 @@
  |  __/ | | | (_| | | |_| | | | |_____| |  __/ | |_| | |  __/
   \___| |_|  \__, |  \__,_| |_|          \___|  \__, |  \___|
                 |_|                             |___/
-
-   riego satelital para pequeños agricultores de Coquimbo
-   v0.2.0-dev • by Cesar Rivas
 ```
+
+**Copiloto de riego open source para pequeños agricultores del semiárido chileno.**
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB.svg?logo=python&logoColor=white)
 ![Satellite](https://img.shields.io/badge/Sentinel--2-L2A-2f6f4e.svg)
-![AI](https://img.shields.io/badge/DeepSeek-lenguaje_natural-4b6bfb.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-WIP-orange.svg)
 
-`elqui-eye` es un copiloto de riego open source para el pequeño agricultor del semiárido chileno (Región de Coquimbo) y, a la vez, un proyecto de investigación sobre detección temprana de estrés hídrico con deep learning. Entra una dirección o coordenadas de la parcela y devuelve una recomendación de riego en **mm/día** con su explicación en **lenguaje natural**.
+## ¿Qué es?
 
-La misión es el acceso gratuito a una recomendación específica del predio: no un promedio regional, sino la imagen de *tu* parcela, su índice de vegetación (NDVI → Kcb) y el agua que corresponde reponer. Herramientas como **RiegaBien (UC)** y **PLAS (INIA)** resuelven partes del mismo problema; `elqui-eye` no compite con ellas: busca ser la capa open source que aporta transparencia, imagen satelital por parcela y explicación en lenguaje natural.
+Responde una pregunta simple: **¿cuánto debo regar esta semana?**
 
-El proyecto es **Python puro**: `pystac-client` + `rasterio` para el pipeline satelital, ET0 FAO-56 × Kcb para la recomendación, `torch` para el modelo temporal y FastAPI + HTMX + Leaflet para la web. El motor Go anterior quedó archivado en [`internal-go-archive/`](internal-go-archive/) (tag `go-motor-archive`).
+- **Entrada**: las coordenadas de tu parcela.
+- **Salida**: una recomendación de riego en **mm/día** y su explicación en **lenguaje natural**.
 
-## Quick Start
+Sin hardware, sin tokens y sin costo: el dato satelital es público y anónimo.
 
-```bash
-# 1. Clonar el repositorio
-git clone https://github.com/andesdevroot/elqui-sensor-report.git
-cd elqui-sensor-report
-
-# 2. Entorno virtual y dependencias
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt          # llega en la Fase 1
-
-# 3. Pipeline satelital: NDVI de una parcela (Fase 1)
-python scripts/ndvi_probe.py --lat -29.90453 --lon -71.24894 --days 90 --cloud 20
-```
-
-> **Estado WIP**: `scripts/ndvi_probe.py` existe (sin commitear) y `requirements.txt` todavía no. El motor agronómico en Python (Fase 2), la serie temporal (Fase 4), el modelo (Fase 6) y la web (Fase 7) están en construcción; ver [doc/06-ROADMAP.md](doc/06-ROADMAP.md).
->
-> **Código histórico**: el motor Go está en [`internal-go-archive/`](internal-go-archive/) (tag `go-motor-archive`) y el cliente Copernicus en `archive/copernicus/`; ninguno se mantiene.
-
-## Estructura del proyecto
-
-Estructura objetivo (se puebla por fases):
+## Cómo funciona
 
 ```text
-elqui-eye/                      # repo andesdevroot/elqui-sensor-report
-├── scripts/                    # pipeline Python
-│   └── ndvi_probe.py           # NDVI por ventana sobre el AOI            [Fase 1]
-│   # et0.py · kcb.py · irrigation.py · deepseek.py · timeseries.py        [Fases 2-4]
-├── web/                        # FastAPI + HTMX + Leaflet                 [Fase 7]
-├── archive/
-│   └── copernicus/             # cliente Copernicus archivado (histórico)
-├── internal-go-archive/        # motor Go archivado (tag go-motor-archive)
-├── doc/                        # documentación — fuente de verdad
-├── testdata/                   # CSV de ejemplo (histórico Go)
-├── Design.md
-├── Task.md
-├── LICENSE
-└── README.md
+Sentinel-2 (Earth Search) → NDVI → Kcb (INIA) → ETc = ET0 × Kcb → DeepSeek → mm/día
 ```
 
-## Documentación
+1. **Sentinel-2 vía Earth Search** — catálogo STAC público y anónimo; se lee solo la ventana de la parcela sobre un COG, sin descargar la escena completa.
+2. **NDVI** — estado de la vegetación en el predio.
+3. **Kcb (método INIA)** — `Kcb = 1.51 × NDVI − 0.23`.
+4. **ETc = ET0 × Kcb** — ET0 FAO-56 (Hargreaves-Samani) por la demanda del cultivo.
+5. **DeepSeek** — traduce los números a una recomendación en español de Chile.
 
-La documentación completa vive en `doc/` y es la fuente de verdad del proyecto:
+## Estado
 
-- [00 — Visión general](doc/00-OVERVIEW.md)
-- [01 — Arquitectura](doc/01-ARCHITECTURE.md)
-- [02 — Modelo de datos](doc/02-DATA-MODEL.md)
-- [03 — Metodología](doc/03-METHODOLOGY.md)
-- [04 — Convenciones](doc/04-CONVENTIONS.md)
-- [05 — Fuentes de datos](doc/05-DATA-SOURCES.md)
-- [06 — Roadmap](doc/06-ROADMAP.md)
-- [07 — Handoff entre sesiones](doc/07-HANDOFF.md)
+**Fase 1 completa**: el pipeline satelital está validado en vivo contra dos parcelas reales de Coquimbo, sin tokens, sin OAuth y sin Copernicus.
+
+## Resultados validados
+
+| Parcela | Coordenadas | NDVI (media) |
+|---|---|---|
+| Calle urbana, La Serena | -29.90453, -71.24894 | 0.08 — suelo desnudo |
+| Viña, Vicuña | -30.032, -70.712 | 0.40 — vegetación activa |
+
+## Roadmap
+
+- [x] **Fase 1** — Pipeline satelital mínimo (`ndvi_probe.py`, validado con la parcela La Serena `2W89+VG`)
+- [ ] **Fase 2** — Motor agronómico en Python (`et0.py`, `kcb.py`, `irrigation.py`)
+- [ ] **Fase 3** — Capa DeepSeek (`deepseek.py`, prompt en español chileno)
+- [ ] **Fase 4** — Serie temporal multitemporal (`timeseries.py`, 2019–2026, 10 parcelas de Coquimbo)
+- [ ] **Fase 5** — Baseline FAO-56 + NDVI (método PLAS/INIA)
+- [ ] **Fase 6** — Modelo deep learning (LSTM o Transformer temporal)
+- [ ] **Fase 7** — Web mínima (FastAPI + HTMX + Leaflet)
+- [ ] **Fase 8** — Escritura del paper + publicación + release open source
+
+El detalle de cada fase (entregables, criterios y tiempos) está en [doc/06-ROADMAP.md](doc/06-ROADMAP.md).
+
+## Objetivo de investigación
+
+Detección **temprana** de estrés hídrico con deep learning sobre series temporales Sentinel-2, con un baseline agronómico (FAO-56) como punto de comparación. Paper objetivo: **Computers and Electronics in Agriculture**.
+
+## Inspiración
+
+**PLAS (INIA)** y **RiegaBien (UC)** resolvieron partes de este problema antes que nosotros. Este proyecto **no compite** con ellas: busca ser una capa open source que aporte transparencia, imagen satelital por parcela y explicación en lenguaje natural.
+
+## Instalación
+
+```bash
+git clone https://github.com/andesdevroot/elqui-sensor-report.git
+cd elqui-sensor-report
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## Uso
+
+```bash
+python3 scripts/ndvi_probe.py --lat -30.032 --lon -70.712 --days 90 --cloud 20
+```
+
+## Código histórico
+
+El motor Go anterior quedó archivado en `internal-go-archive/` (tag `go-motor-archive`) y el cliente Copernicus en `archive/copernicus/`; ninguno se mantiene.
 
 ## Autor
 
