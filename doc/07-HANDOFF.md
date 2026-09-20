@@ -4,18 +4,18 @@ Documento de retoma: qué se hizo, qué sigue y qué está bloqueado. Se actuali
 
 ## Estado actual
 
-- **Fase 0 — Reset y limpieza: completa.** `pkg/copernicus` quedó archivado en `archive/copernicus/` (tag `copernicus-archive`) y **Earth Search** reemplaza a Copernicus Data Space como fuente satelital.
-- **Fase 1 — Pipeline satelital mínimo: arrancando.**
-- Motor existente en verde: parser CSV (`internal/ingest`) + ET0 FAO-56 (`internal/analysis`).
+- **Migración a Python puro: completa.** El motor Go quedó archivado (`internal-go-archive/`, tag `go-motor-archive`) y el módulo congelado (`go.mod.archived`).
+- **Fase 1 — Pipeline satelital mínimo: en curso.** `scripts/ndvi_probe.py` ya existe en el working tree (sin commitear): Earth Search anónimo + lectura por ventana con `rasterio` + NDVI.
+- Sin código Go activo: ya no aplica `go test`; los tests pasan a `pytest` (desde la Fase 2).
 
 ## Último commit
 
-- `aa847f1` — `docs(roadmap): reescribe roadmap como copiloto de riego`
+- `b4ad769` — `chore: archiva motor Go y prepara migración a Python puro` (tag `go-motor-archive`)
 
 ## Siguiente tarea
 
-- **Crear `scripts/ndvi_probe.py`** con `pystac-client` + `rasterio`: búsqueda STAC en Earth Search (**anónimo**), lectura **por ventana** del AOI sobre COG y cálculo del NDVI medio. Validar con la parcela La Serena `2W89+VG`.
-- Después, en la misma fase: `scripts/requirements.txt` y la validación documentada de la parcela.
+- **Validar y commitear `scripts/ndvi_probe.py`** (ya escrito, sin commitear) contra la parcela La Serena `2W89+VG` (`--lat -29.90453 --lon -71.24894`), y añadir `scripts/requirements.txt` (`pystac-client`, `rasterio`, `numpy`).
+- Después, Fase 2: `scripts/et0.py` portado desde el Go archivado.
 
 ## Blockers
 
@@ -23,11 +23,12 @@ Documento de retoma: qué se hizo, qué sigue y qué está bloqueado. Se actuali
 
 ## Deuda técnica
 
-- **`archive/copernicus/` archivado, sin mantenimiento**: su descarga rechazaba con 401 el token de cuenta de servicio y el redirect perdía el header de autorización. Referencia histórica; no se usa.
-- **Cita INIA pendiente**: `doc/05` marca como TODO la cita exacta del paper que valida `Kcb = 1.51 × NDVI − 0.23` en Coquimbo.
+- **`internal-go-archive/` y `go.mod.archived`**: referencia histórica, sin mantenimiento (el `.gitignore` excluye `*.archived`).
+- **Cita INIA pendiente**: `doc/05-DATA-SOURCES.md` marca como TODO la cita exacta del paper que valida `Kcb = 1.51 × NDVI − 0.23` en Coquimbo.
+- **Sin `requirements.txt` todavía**: lo agrega la Fase 1; hasta entonces las dependencias se instalan a mano en `.venv/`.
 
 ## Decisiones recientes
 
-- **Earth Search reemplaza a Copernicus**: catálogo STAC público y **anónimo** (sin OAuth, sin tokens, sin redirects rotos). Se adoptó **Python** (`pystac-client` + `rasterio`) para el pipeline satelital, porque es el ecosistema real para rasters; **Go** se queda con el motor ET0 y la web.
-- **`pkg/copernicus` archivado, no borrado**, con el tag `copernicus-archive` como referencia.
-- **Directorios vestigiales eliminados**: `internal/satellite`, `internal/ai` y `cmd/elqui`.
+- **Python puro**: por expertise del autor (Python senior) y porque el ecosistema científico (rasterio, numpy, torch) vive en Python; un solo lenguaje elimina el puente por subproceso entre Go y Python.
+- **Go archivado, no borrado**: `git mv` preserva la historia completa y el tag `go-motor-archive` marca el punto de congelamiento.
+- **`scripts/ndvi_probe.py` ya escrito sin commitear**: el pipeline satelital arrancó antes del cierre de la migración; falta su validación y su commit.
