@@ -9,9 +9,18 @@ Fuente principal: **Copernicus Data Space** (Sentinel-2 L2A). Complementarias: D
 - Uso previsto (Fase 1):
   - búsqueda por **AOI** (polígono en **WKT**) — la parcela específica del agricultor;
   - filtro por **nubosidad** (porcentaje máximo de nubes);
-  - descarga de las bandas **B04 (rojo)** y **B08 (NIR)**.
+  - descarga de las bandas **B04 (rojo)**, **B08 (NIR)** y **SCL** (máscara de nubes).
 - Cálculo: `NDVI = (B08 - B04) / (B08 + B04)` → conversión a **Kcb**.
-- TODO: documentar el endpoint exacto y el flujo de autenticación una vez validados en Fase 1.
+
+### Endpoints validados en vivo
+
+- **Token (OAuth2)**: `https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token` — `POST` `application/x-www-form-urlencoded` con `grant_type=client_credentials`, `client_id` y `client_secret`; devuelve `access_token` (JWT).
+- **Catálogo STAC**: `https://stac.dataspace.copernicus.eu/v1/search` — `POST` `application/json` con `collections: ["sentinel-2-l2a"]`, `intersects` (GeoJSON), `datetime: "<inicio>/<fin>"` y `limit`.
+- **Descarga de bandas**: los assets del STAC apuntan a `s3://eodata/Sentinel-2/MSI/L2A/...` (`auth:refs: ["s3"]`), pero cada asset incluye una **alternativa HTTPS** en `assets.<banda>.alternate.https.href` → `https://download.dataspace.copernicus.eu/odata/v1/Products(<uuid>)/Nodes(...)/$value`, con `auth:refs: ["oidc"]`: la descarga usa el **mismo token Bearer**.
+  - Claves de asset verificadas: `B04_10m` (rojo), `B08_10m` (NIR) y `SCL_20m` (máscara de nubes); también existen variantes `_20m` y `_60m`.
+  - Cada `.jp2` de 10 m pesa del orden de **96 MB** (`file:size`) → la descarga debe ir a disco, no a memoria.
+  - Nuestro struct `copernicus.Asset` hoy expone solo `Href` (el `s3://...`): **T1.3 debe capturar `alternate.https.href`** para descargar por HTTPS.
+- Notas: el catálogo STAC también responde **en anónimo** (la búsqueda no exige token), pero el token sí es necesario para la descarga (`oidc`). La respuesta incluye un enlace `next` con `token` para paginar.
 - Alternativas si la API principal resulta engorrosa: `sentinel-images-downloader`, `georeader`, `phidown`.
 
 ## DGA — Sistema Hidrométrico
