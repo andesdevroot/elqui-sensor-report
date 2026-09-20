@@ -4,69 +4,67 @@
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│        cmd/elqui (CLI motor)  ·  cmd/elqui-web (web)         │
-│                 web/ (HTML + HTMX + Leaflet)                 │
+│                  frontend — Leaflet + HTMX                   │
 └───────────────────────────────┬──────────────────────────────┘
                                 │
                                 ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                          internal/                           │
-│                                                              │
-│          satellite (NDVI, Kcb)   ►   ai (DeepSeek)           │
-│           ingest ► analysis (ET0 FAO-56) ► report            │
+│        backend Go — cmd/elqui-web + internal/analysis        │
+│        ET0 FAO-56 · Kcb (INIA) · irrigation → mm/día         │
+│       orquesta scripts/ (subproceso) y DeepSeek (HTTP)       │
 └───────────────────────────────┬──────────────────────────────┘
                                 │
                                 ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                             pkg/                             │
-│                                                              │
-│ copernicus — Sentinel-2 L2A (AOI WKT · nubosidad · B04/B08)  │
+│               scripts/ Python — pipeline NDVI                │
+│      ndvi_probe.py · kcb.py (pystac-client + rasterio)       │
 └───────────────────────────────┬──────────────────────────────┘
                                 │
                                 ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                       internal/models                        │
-│         SensorReading · ET0Result · EfficiencyReport         │
+│          Earth Search — STAC público AWS (anónimo)           │
+│                   Sentinel-2 L2A como COG                    │
+└──────────────────────────────────────────────────────────────┘
+
+Servicio externo lateral (lo llama el backend Go):
+
+┌──────────────────────────────────────────────────────────────┐
+│                 DeepSeek — servicio externo                  │
+│              números → lenguaje natural (es-CL)              │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**Regla de dependencias**: `cmd` orquesta e importa `internal/` y `pkg/`; `internal/` importa `pkg/` y `models`; `pkg/` no importa `internal/`; `internal/models` no importa nada del proyecto.
+**Regla de dependencias**: el frontend solo habla con el backend; el backend Go orquesta (`internal/analysis` para el cálculo, `scripts/` por subproceso, DeepSeek por HTTP); los scripts Python hablan con Earth Search; `internal/analysis` es cálculo puro (sin red).
 
 ## Componentes
 
-- `cmd/elqui` — CLI motor (análisis y recomendación).
-- `cmd/elqui-web` — servidor web mínimo.
-- `internal/satellite` — índices de vegetación: NDVI y conversión a Kcb.
-- `internal/ai` — capa DeepSeek: traduce los números a lenguaje natural (es-CL).
-- `internal/analysis` — ET0 FAO-56 y balance hídrico (motor existente).
+- `web/` + `cmd/elqui-web` — frontend (Leaflet + HTMX) y servidor.
+- `internal/analysis` — motor agronómico en Go: ET0 FAO-56, Kcb e `irrigation` (recomendación en mm/día).
 - `internal/ingest` — parser CSV de sensores (motor existente; fallback).
-- `internal/report` — render de reportes.
-- `pkg/copernicus` — cliente de Copernicus Data Space (Sentinel-2 L2A).
-- `web/` — HTML + HTMX + Leaflet.
+- `scripts/` — pipeline satelital en Python: `ndvi_probe.py`, `kcb.py`.
+- `archive/copernicus/` — cliente Copernicus archivado: referencia histórica, ya no se usa.
+- **Earth Search** — catálogo STAC público, sin credenciales.
+- **DeepSeek** — traducción a lenguaje natural.
 
-## Decisión: Go
+## Decisión: Python para rasters, Go para el motor y la web
 
-- **stdlib robusta**: `encoding/csv`, `encoding/json`, `net/http` y `time` cubren el motor y los clientes HTTP (Copernicus, DeepSeek).
-- **Binario estático**: `go build -ldflags="-s -w"` produce un único binario, sin runtime ni instalación.
-- **Consistencia con promptc**: mismo stack, estructura y metodología que el proyecto hermano del mismo autor (`github.com/andesdevroot/promptc`).
-
-## Principio: sin dependencias Go externas
-
-`go.mod` no declara dependencias. Las APIs externas (Copernicus, DeepSeek) se consumen con `net/http` de la stdlib. Si una tarea parece requerir una librería externa, primero se busca una alternativa con stdlib; si no existe, la decisión se documenta aquí antes de agregarla.
+- **Python** es el ecosistema real para rasters: `pystac-client`, `rasterio` y `numpy` cubren la búsqueda STAC y la lectura por ventana de un COG. Go no tiene lectura de GeoTIFF en la stdlib y reimplementarla no aporta valor.
+- **Go** se queda con lo que ya funciona y está probado: el motor ET0 (validado contra FAO-56), la orquestación, la API y la web.
+- **Sin dependencias Go externas**: Go sigue solo con stdlib; lo pesado se delega a subprocesos Python (mismo criterio que se usó con `gdal_translate`).
+- **Sin tokens**: Earth Search es anónimo, así que desaparece la fricción de OAuth que bloqueó la descarga anterior.
 
 ## Flujo de datos
 
-Ruta satelital (principal):
-
 ```text
-AOI (WKT) → Copernicus (B04, B08) → NDVI → Kcb → ET0 (FAO-56) × Kcb → mm/día → DeepSeek → lenguaje natural → CLI / web
+dirección/coordenadas → polígono → ndvi_probe.py (Earth Search) → NDVI → kcb.py → Kcb → ET0 × Kcb → mm/día → DeepSeek → lenguaje natural → web
 ```
 
-1. `pkg/copernicus` busca la escena Sentinel-2 L2A del AOI, filtra por nubosidad y descarga B04/B08.
-2. `internal/satellite` calcula NDVI y lo convierte a Kcb (coeficiente de cultivo basal).
-3. `internal/analysis` combina ET0 con Kcb → recomendación en mm/día.
-4. `internal/ai` traduce la recomendación a lenguaje natural (es-CL).
-5. `internal/report` y `web/` presentan el resultado.
+1. El frontend (Leaflet) o la CLI entrega el polígono de la parcela.
+2. `scripts/ndvi_probe.py` busca escenas en Earth Search y lee la ventana del AOI como COG → NDVI.
+3. `scripts/kcb.py` convierte NDVI → Kcb con el método INIA (ver `doc/05-DATA-SOURCES.md`).
+4. `internal/analysis` combina Kcb con ET0 FAO-56 → recomendación en mm/día.
+5. DeepSeek traduce la recomendación a lenguaje natural (es-CL).
+6. La web (o la CLI) presenta el resultado.
 
 Ruta de sensor (fallback, ya implementada):
 
@@ -74,6 +72,4 @@ Ruta de sensor (fallback, ya implementada):
 CSV del sensor → []SensorReading → ET0Result → balance hídrico → EfficiencyReport → Markdown
 ```
 
-Cuando no hay imagen satelital utilizable (p. ej. nubosidad persistente), el motor existente produce el reporte a partir de las lecturas del sensor.
-
-Las fuentes y su estado se documentan en `doc/05-DATA-SOURCES.md`.
+Cuando no hay imagen satelital utilizable (por ejemplo, nubosidad persistente), el motor existente produce el reporte a partir de las lecturas del sensor.
