@@ -1,58 +1,35 @@
 # 05 — Fuentes de datos
 
-Fuente principal: **Copernicus Data Space** (Sentinel-2 L2A). Complementarias: DGA, SMAP, SMOS y CIREN.
+Fuente satelital principal: **Element 84 Earth Search**. Al final se listan las alternativas evaluadas y la validación del motor ET0.
 
-## Copernicus Data Space — Sentinel-2 L2A (fuente principal)
+## Earth Search — STAC público (fuente principal)
 
-- Portal: https://dataspace.copernicus.eu/ — registro gratis; **ya hecho por el autor**.
-- Producto: **Sentinel-2 L2A** (reflectancia de superficie, corregida atmosféricamente).
-- Uso previsto (Fase 1):
-  - búsqueda por **AOI** (polígono en **WKT**) — la parcela específica del agricultor;
-  - filtro por **nubosidad** (porcentaje máximo de nubes);
-  - descarga de las bandas **B04 (rojo)**, **B08 (NIR)** y **SCL** (máscara de nubes).
-- Cálculo: `NDVI = (B08 - B04) / (B08 + B04)` → conversión a **Kcb**.
+- **Endpoint**: https://earth-search.aws.element84.com/v1
+- **Qué es**: catálogo **STAC** público de Element 84 sobre AWS Open Data.
+- **Acceso**: **anónimo, sin tokens ni registro**.
+- **Colección**: `sentinel-2-l2a` — Sentinel-2 L2A servido como **COG** (Cloud Optimized GeoTIFF).
+- **Lectura**: `pystac-client` para buscar por **AOI**, rango de fechas y nubosidad; **`rasterio` con lectura por ventana** (`windowed read`) para leer solo el recorte del AOI — nunca se descarga la escena completa.
+- **Bandas**: `B04` (rojo) y `B08` (NIR) para el NDVI; opcionalmente `SCL` para enmascarar nubes y píxeles inválidos. En L2A la reflectancia viene escalada, así que hay que aplicar el `scale`/`offset` que declare cada asset.
 
-### Endpoints validados en vivo
+### Cálculo
 
-- **Token (OAuth2)**: `https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token` — `POST` `application/x-www-form-urlencoded` con `grant_type=client_credentials`, `client_id` y `client_secret`; devuelve `access_token` (JWT).
-- **Catálogo STAC**: `https://stac.dataspace.copernicus.eu/v1/search` — `POST` `application/json` con `collections: ["sentinel-2-l2a"]`, `intersects` (GeoJSON), `datetime: "<inicio>/<fin>"` y `limit`.
-- **Descarga de bandas**: los assets del STAC apuntan a `s3://eodata/Sentinel-2/MSI/L2A/...` (`auth:refs: ["s3"]`), pero cada asset incluye una **alternativa HTTPS** en `assets.<banda>.alternate.https.href` → `https://download.dataspace.copernicus.eu/odata/v1/Products(<uuid>)/Nodes(...)/$value`, con `auth:refs: ["oidc"]`: la descarga usa el **mismo token Bearer**.
-  - Claves de asset verificadas: `B04_10m` (rojo), `B08_10m` (NIR) y `SCL_20m` (máscara de nubes); también existen variantes `_20m` y `_60m`.
-  - Cada `.jp2` de 10 m pesa del orden de **96 MB** (`file:size`) → la descarga debe ir a disco, no a memoria.
-  - Nuestro struct `copernicus.Asset` hoy expone solo `Href` (el `s3://...`): **T1.3 debe capturar `alternate.https.href`** para descargar por HTTPS.
-- Notas: el catálogo STAC también responde **en anónimo** (la búsqueda no exige token), pero el token sí es necesario para la descarga (`oidc`). La respuesta incluye un enlace `next` con `token` para paginar.
-- Alternativas si la API principal resulta engorrosa: `sentinel-images-downloader`, `georeader`, `phidown`.
+```text
+NDVI = (B08 - B04) / (B08 + B04)
+Kcb  = 1.51 × NDVI − 0.23
+```
 
-## DGA — Sistema Hidrométrico
+- La relación `Kcb = 1.51 × NDVI − 0.23` corresponde al **método INIA** (INIA Intihuasi), validado en Coquimbo.
+- TODO: completar la cita exacta del paper (autoría, año, DOI o URL) antes de publicar recomendaciones basadas en esta fórmula.
 
-- URL: https://dga.mop.gob.cl/
-- Qué aporta: información hidrométrica oficial de la Dirección General de Aguas (caudales, niveles y registros asociados).
-- TODO: documentar endpoint o formato de descarga (CSV, Excel, API) y condiciones de uso.
-- Rol: complementaria (la ruta principal ya es satelital).
+## Alternativas evaluadas
 
-## CIREN — Coquimbo
+- **Microsoft Planetary Computer** — catálogo STAC con Sentinel-2 L2A, búsqueda también anónima; buena segunda fuente si Earth Search falla.
+- **AWS Open Data** — el dataset crudo detrás de Earth Search: el mismo dato sin depender del catálogo.
+- **Mundi Web Services** — catálogo alternativo (DIAS), si más adelante se necesita otra vía de acceso.
 
-- Plataforma de monitoreo hídrico en desarrollo.
-- TODO: investigar si publica API o datos descargables.
-- Rol: v2+.
+## Fuente de validación ET0 (motor Go, se mantiene)
 
-## SMAP (NASA)
-
-- Humedad de suelo con resolución de 9 km.
-- Acceso: [NASA Earthdata](https://www.earthdata.nasa.gov/) (registro gratis).
-- Rol: v2+.
-
-## SMOS (ESA)
-
-- Humedad de suelo con más de 15 años de registros.
-- Acceso: Copernicus Data Space (gratis).
-- Rol: v2+.
-
-## Estrategia
-
-La ruta principal es satelital: Sentinel-2 L2A → NDVI → Kcb sobre el polígono de la parcela, combinado con ET0 FAO-56. El motor de sensores + ET0 queda como **fallback** cuando no hay imagen utilizable (p. ej. nubosidad persistente). DGA, SMAP, SMOS y CIREN quedan para v2+.
-
-## Fuente de validación ET0
+El motor `internal/analysis` sigue calculando ET0 con Hargreaves-Samani; su validación no cambia.
 
 Fuente primaria: **FAO-56** — Allen, R.G., Pereira, L.S., Raes, D. & Smith, M. (1998). *Crop evapotranspiration: Guidelines for computing crop water requirements*. FAO Irrigation and Drainage Paper 56. Roma: FAO.
 
