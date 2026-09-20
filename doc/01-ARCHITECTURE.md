@@ -4,72 +4,63 @@
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│                  frontend — Leaflet + HTMX                   │
+│               web/ — FastAPI + HTMX + Leaflet                │
 └───────────────────────────────┬──────────────────────────────┘
                                 │
                                 ▼
 ┌──────────────────────────────────────────────────────────────┐
-│        backend Go — cmd/elqui-web + internal/analysis        │
-│        ET0 FAO-56 · Kcb (INIA) · irrigation → mm/día         │
-│       orquesta scripts/ (subproceso) y DeepSeek (HTTP)       │
+│                  scripts/ — pipeline Python                  │
+│               ndvi_probe.py · kcb.py · et0.py                │
+│         irrigation.py · timeseries.py · deepseek.py          │
 └───────────────────────────────┬──────────────────────────────┘
                                 │
                                 ▼
 ┌──────────────────────────────────────────────────────────────┐
-│               scripts/ Python — pipeline NDVI                │
-│      ndvi_probe.py · kcb.py (pystac-client + rasterio)       │
-└───────────────────────────────┬──────────────────────────────┘
-                                │
-                                ▼
-┌──────────────────────────────────────────────────────────────┐
-│          Earth Search — STAC público AWS (anónimo)           │
+│           datos — Earth Search (STAC AWS, anónimo)           │
 │                   Sentinel-2 L2A como COG                    │
 └──────────────────────────────────────────────────────────────┘
 
-Servicio externo lateral (lo llama el backend Go):
+Servicio externo lateral (lo llama el pipeline):
 
 ┌──────────────────────────────────────────────────────────────┐
-│                 DeepSeek — servicio externo                  │
+│                 IA — DeepSeek (deepseek.py)                  │
 │              números → lenguaje natural (es-CL)              │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**Regla de dependencias**: el frontend solo habla con el backend; el backend Go orquesta (`internal/analysis` para el cálculo, `scripts/` por subproceso, DeepSeek por HTTP); los scripts Python hablan con Earth Search; `internal/analysis` es cálculo puro (sin red).
+**Regla de dependencias**: `web/` consume `scripts/`; los scripts hablan con Earth Search y con DeepSeek; los datos fluyen en una sola dirección (satélite → NDVI → Kcb → mm/día → lenguaje natural).
 
 ## Componentes
 
-- `web/` + `cmd/elqui-web` — frontend (Leaflet + HTMX) y servidor.
-- `internal/analysis` — motor agronómico en Go: ET0 FAO-56, Kcb e `irrigation` (recomendación en mm/día).
-- `internal/ingest` — parser CSV de sensores (motor existente; fallback).
-- `scripts/` — pipeline satelital en Python: `ndvi_probe.py`, `kcb.py`.
-- `archive/copernicus/` — cliente Copernicus archivado: referencia histórica, ya no se usa.
-- **Earth Search** — catálogo STAC público, sin credenciales.
-- **DeepSeek** — traducción a lenguaje natural.
+- `scripts/ndvi_probe.py` — búsqueda STAC (Earth Search) + NDVI por ventana del AOI.
+- `scripts/timeseries.py` — serie temporal multitemporal de NDVI por parcela.
+- `scripts/kcb.py` — NDVI → Kcb (método INIA).
+- `scripts/et0.py` — ET0 Hargreaves-Samani (portado desde el Go archivado).
+- `scripts/irrigation.py` — ET0 × Kcb → recomendación en mm/día.
+- `scripts/deepseek.py` — traducción a lenguaje natural (es-CL).
+- `web/` — FastAPI + HTMX + Leaflet.
+- `internal-go-archive/` — motor Go archivado (histórico, sin mantenimiento).
+- **Earth Search** — fuente de datos pública y anónima.
 
-## Decisión: Python para rasters, Go para el motor y la web
+## Decisión: Python puro
 
-- **Python** es el ecosistema real para rasters: `pystac-client`, `rasterio` y `numpy` cubren la búsqueda STAC y la lectura por ventana de un COG. Go no tiene lectura de GeoTIFF en la stdlib y reimplementarla no aporta valor.
-- **Go** se queda con lo que ya funciona y está probado: el motor ET0 (validado contra FAO-56), la orquestación, la API y la web.
-- **Sin dependencias Go externas**: Go sigue solo con stdlib; lo pesado se delega a subprocesos Python (mismo criterio que se usó con `gdal_translate`).
-- **Sin tokens**: Earth Search es anónimo, así que desaparece la fricción de OAuth que bloqueó la descarga anterior.
+- **Un solo lenguaje**: pipeline satelital, motor agronómico, modelo y web en Python. Se elimina el puente Go ↔ Python por subproceso, que agregaba superficie de error sin aportar.
+- **Ecosistema**: `rasterio` y `numpy` resuelven la lectura por ventana de COG; `torch` cubre el modelo secuencial. Nada de esto existe en Go.
+- **Sin binarios estáticos**: la web es un servicio FastAPI; no hay CLI compilada que distribuir.
+- **Sin tokens**: Earth Search es anónimo.
+- **Dependencias**: declaradas en `requirements.txt` y resueltas en un entorno virtual (ver `doc/04-CONVENTIONS.md`).
 
 ## Flujo de datos
 
 ```text
-dirección/coordenadas → polígono → ndvi_probe.py (Earth Search) → NDVI → kcb.py → Kcb → ET0 × Kcb → mm/día → DeepSeek → lenguaje natural → web
+dirección/coordenadas → polígono → ndvi_probe.py (Earth Search) → NDVI → kcb.py → Kcb → irrigation.py (ET0 × Kcb) → mm/día → deepseek.py → lenguaje natural → web/
 ```
 
-1. El frontend (Leaflet) o la CLI entrega el polígono de la parcela.
-2. `scripts/ndvi_probe.py` busca escenas en Earth Search y lee la ventana del AOI como COG → NDVI.
-3. `scripts/kcb.py` convierte NDVI → Kcb con el método INIA (ver `doc/05-DATA-SOURCES.md`).
-4. `internal/analysis` combina Kcb con ET0 FAO-56 → recomendación en mm/día.
-5. DeepSeek traduce la recomendación a lenguaje natural (es-CL).
-6. La web (o la CLI) presenta el resultado.
+1. La web (o un script) recibe el polígono de la parcela.
+2. `ndvi_probe.py` busca escenas en Earth Search y lee la ventana del AOI como COG → NDVI.
+3. `kcb.py` convierte NDVI → Kcb con el método INIA (ver `doc/05-DATA-SOURCES.md`).
+4. `irrigation.py` combina Kcb con ET0 FAO-56 (`et0.py`) → recomendación en mm/día.
+5. `deepseek.py` traduce la recomendación a lenguaje natural (es-CL).
+6. La web presenta el resultado.
 
-Ruta de sensor (fallback, ya implementada):
-
-```text
-CSV del sensor → []SensorReading → ET0Result → balance hídrico → EfficiencyReport → Markdown
-```
-
-Cuando no hay imagen satelital utilizable (por ejemplo, nubosidad persistente), el motor existente produce el reporte a partir de las lecturas del sensor.
+Para el objetivo de investigación, `timeseries.py` construye la serie multitemporal que alimenta el baseline (Fase 5) y el modelo deep learning (Fase 6).
